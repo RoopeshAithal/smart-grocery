@@ -688,4 +688,4 @@ MIT — free to use, fork, and modify.
 
 ---
 
-*Built with ❤️ using React + Claude AI · Version 4.1 · Optimized for Hanover, MD*
+*Built with ❤️ using React + Claude AI · Version 4.1 · Optimized for Ellicottcity, MD*
