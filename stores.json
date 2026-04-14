@@ -1,0 +1,197 @@
+[
+  {
+    "id": "aldi",
+    "name": "ALDI",
+    "flag": "🛒",
+    "tier": 1,
+    "type": "mainstream",
+    "strengths": ["produce", "dairy", "pantry"],
+    "address": "7667 Arundel Mills Blvd, Hanover MD",
+    "notes": "Closed Sundays. Bring a quarter for the cart.",
+    "mult": {
+      "dairy": 0.9, "produce": 0.85, "pantry": 0.9, "meat": 1.0,
+      "bakery": 0.95, "beverages": 0.95, "frozen": 0.9, "household": 1.0,
+      "spices": 1.1, "rice/grains": 1.1, "snacks": 1.0
+    }
+  },
+  {
+    "id": "walmart",
+    "name": "Walmart",
+    "flag": "🛒",
+    "tier": 1,
+    "type": "mainstream",
+    "strengths": ["pantry", "beverages", "household"],
+    "address": "7081 Arundel Mills Cir, Hanover MD",
+    "notes": "Best for pantry staples and household items.",
+    "mult": {
+      "dairy": 1.0, "produce": 1.0, "pantry": 0.85, "meat": 0.95,
+      "bakery": 0.9, "beverages": 0.85, "frozen": 0.9, "household": 0.85,
+      "spices": 1.0, "rice/grains": 1.0, "snacks": 0.95
+    }
+  },
+  {
+    "id": "foodlion",
+    "name": "Food Lion",
+    "flag": "🛒",
+    "tier": 2,
+    "type": "mainstream",
+    "strengths": ["meat", "dairy", "bakery"],
+    "address": "2655 Annapolis Rd, Hanover MD",
+    "notes": "Best meat dept. Use loyalty card for extra savings.",
+    "mult": {
+      "dairy": 1.05, "produce": 1.05, "pantry": 1.05, "meat": 0.9,
+      "bakery": 1.0, "beverages": 1.05, "frozen": 1.05, "household": 1.1,
+      "spices": 1.1, "rice/grains": 1.1, "snacks": 1.0
+    }
+  },
+  {
+    "id": "safeway",
+    "name": "Safeway",
+    "flag": "🛒",
+    "tier": 2,
+    "type": "mainstream",
+    "strengths": ["deli", "bakery", "meat"],
+    "address": "7643 Arundel Mills Blvd, Hanover MD",
+    "notes": "Use the Safeway app for digital coupons.",
+    "mult": {
+      "dairy": 1.15, "produce": 1.1, "pantry": 1.15, "meat": 1.05,
+      "bakery": 1.1, "beverages": 1.1, "frozen": 1.1, "household": 1.1,
+      "spices": 1.15, "rice/grains": 1.15, "snacks": 1.1
+    }
+  },
+  {
+    "id": "traderjoes",
+    "name": "Trader Joe's",
+    "flag": "🛒",
+    "tier": 2,
+    "type": "mainstream",
+    "strengths": ["frozen", "snacks", "produce"],
+    "address": "Nearest location: Columbia MD",
+    "notes": "Great for unique frozen meals and snacks.",
+    "mult": {
+      "dairy": 1.05, "produce": 1.0, "pantry": 0.95, "meat": 1.1,
+      "bakery": 1.0, "beverages": 1.05, "frozen": 0.9, "household": 1.05,
+      "spices": 1.0, "rice/grains": 1.05, "snacks": 0.9
+    }
+  },
+  {
+    "id": "wholeFoods",
+    "name": "Whole Foods",
+    "flag": "🛒",
+    "tier": 3,
+    "type": "mainstream",
+    "strengths": ["organic", "produce", "meat"],
+    "address": "Nearest location: Columbia MD",
+    "notes": "Premium organic focus. Prime members get 10% off.",
+    "mult": {
+      "dairy": 1.4, "produce": 1.2, "pantry": 1.4, "meat": 1.4,
+      "bakery": 1.3, "beverages": 1.3, "frozen": 1.3, "household": 1.4,
+      "spices": 1.3, "rice/grains": 1.4, "snacks": 1.3
+    }
+  },
+  {
+    "id": "costco",
+    "name": "Costco",
+    "flag": "🏪",
+    "tier": 1,
+    "type": "warehouse",
+    "strengths": ["bulk", "meat", "pantry", "household"],
+    "address": "Nearest location: Laurel MD",
+    "notes": "Membership ~$65/yr. Best bulk prices on meat and rice.",
+    "mult": {
+      "dairy": 0.8, "produce": 0.85, "pantry": 0.75, "meat": 0.82,
+      "bakery": 0.82, "beverages": 0.78, "frozen": 0.82, "household": 0.72,
+      "spices": 0.88, "rice/grains": 0.72, "snacks": 0.78
+    }
+  },
+  {
+    "id": "samsclub",
+    "name": "Sam's Club",
+    "flag": "🏪",
+    "tier": 1,
+    "type": "warehouse",
+    "strengths": ["bulk", "beverages", "household", "frozen"],
+    "address": "Nearest location: Glen Burnie MD",
+    "notes": "Membership ~$50/yr. Great for beverages and household bulk.",
+    "mult": {
+      "dairy": 0.82, "produce": 0.87, "pantry": 0.76, "meat": 0.83,
+      "bakery": 0.84, "beverages": 0.76, "frozen": 0.83, "household": 0.73,
+      "spices": 0.9, "rice/grains": 0.74, "snacks": 0.79
+    }
+  },
+  {
+    "id": "patelBros",
+    "name": "Patel Brothers",
+    "flag": "🇮🇳",
+    "tier": 1,
+    "type": "indian",
+    "strengths": ["spices", "rice/grains", "pantry", "dairy"],
+    "address": "7538 Ritchie Hwy, Glen Burnie MD",
+    "notes": "40-50% cheaper on spices and Indian staples.",
+    "mult": {
+      "dairy": 0.85, "produce": 0.9, "pantry": 0.8, "meat": 0.95,
+      "bakery": 0.9, "beverages": 0.9, "frozen": 0.9, "household": 0.95,
+      "spices": 0.55, "rice/grains": 0.55, "snacks": 0.7
+    }
+  },
+  {
+    "id": "taraVani",
+    "name": "Tara Vani",
+    "flag": "🇮🇳",
+    "tier": 1,
+    "type": "indian",
+    "strengths": ["spices", "rice/grains", "snacks"],
+    "address": "Hanover / Glen Burnie area MD",
+    "notes": "Excellent for South Indian groceries and snacks.",
+    "mult": {
+      "dairy": 0.88, "produce": 0.85, "pantry": 0.8, "meat": 0.95,
+      "bakery": 0.88, "beverages": 0.88, "frozen": 0.9, "household": 0.95,
+      "spices": 0.5, "rice/grains": 0.5, "snacks": 0.65
+    }
+  },
+  {
+    "id": "lottePlaza",
+    "name": "Lotte Plaza",
+    "flag": "🇰🇷",
+    "tier": 2,
+    "type": "korean",
+    "strengths": ["produce", "meat", "frozen", "snacks"],
+    "address": "Ellicott City / Catonsville MD",
+    "notes": "Best for Korean produce, frozen dumplings, and snacks.",
+    "mult": {
+      "dairy": 1.0, "produce": 0.85, "pantry": 0.9, "meat": 0.88,
+      "bakery": 0.95, "beverages": 0.9, "frozen": 0.8, "household": 1.0,
+      "spices": 0.9, "rice/grains": 0.75, "snacks": 0.75
+    }
+  },
+  {
+    "id": "hmart",
+    "name": "H Mart",
+    "flag": "🇰🇷",
+    "tier": 2,
+    "type": "korean",
+    "strengths": ["produce", "seafood", "frozen"],
+    "address": "Catonsville / Ellicott City MD",
+    "notes": "Best Asian seafood selection in the area.",
+    "mult": {
+      "dairy": 1.0, "produce": 0.8, "pantry": 0.9, "meat": 0.85,
+      "bakery": 0.95, "beverages": 0.9, "frozen": 0.78, "household": 1.0,
+      "spices": 0.85, "rice/grains": 0.72, "snacks": 0.7
+    }
+  },
+  {
+    "id": "grandMart",
+    "name": "Grand Mart",
+    "flag": "🌏",
+    "tier": 1,
+    "type": "asian",
+    "strengths": ["produce", "rice/grains", "spices"],
+    "address": "Ellicott City MD",
+    "notes": "Pan-Asian market. Great rice and spice prices.",
+    "mult": {
+      "dairy": 0.95, "produce": 0.8, "pantry": 0.82, "meat": 0.9,
+      "bakery": 0.9, "beverages": 0.88, "frozen": 0.82, "household": 0.95,
+      "spices": 0.65, "rice/grains": 0.6, "snacks": 0.72
+    }
+  }
+]
