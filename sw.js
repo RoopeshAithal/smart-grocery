@@ -1,8 +1,10 @@
-const CACHE = "smart-grocery-v4";
+const CACHE = "smart-grocery-v5";
 const ASSETS = [
   "./",
   "./index.html",
   "./manifest.json",
+  "./stores.json",
+  "./seed.json",
   "https://unpkg.com/react@18/umd/react.production.min.js",
   "https://unpkg.com/react-dom@18/umd/react-dom.production.min.js",
   "https://unpkg.com/@babel/standalone/babel.min.js"
