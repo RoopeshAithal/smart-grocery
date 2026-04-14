@@ -1,0 +1,79 @@
+{
+  "categories": {
+    "dairy":       { "bg": "#b5d4f4", "text": "#0c447c", "basePrice": 4.5  },
+    "produce":     { "bg": "#c0dd97", "text": "#27500a", "basePrice": 3.2  },
+    "pantry":      { "bg": "#fac775", "text": "#633806", "basePrice": 2.8  },
+    "meat":        { "bg": "#f5c4b3", "text": "#712b13", "basePrice": 8.5  },
+    "bakery":      { "bg": "#f4c0d1", "text": "#72243e", "basePrice": 3.5  },
+    "beverages":   { "bg": "#cecbf6", "text": "#3c3489", "basePrice": 4.2  },
+    "frozen":      { "bg": "#b5d4f4", "text": "#185fa5", "basePrice": 5.5  },
+    "household":   { "bg": "#d3d1c7", "text": "#444441", "basePrice": 6.0  },
+    "spices":      { "bg": "#f0997b", "text": "#712b13", "basePrice": 3.0  },
+    "snacks":      { "bg": "#9fe1cb", "text": "#085041", "basePrice": 2.5  },
+    "rice/grains": { "bg": "#fac775", "text": "#633806", "basePrice": 2.8  }
+  },
+  "history": [
+    {
+      "id": "w1",
+      "week": "Week 1 (Mar 3–9)",
+      "items": [
+        { "name": "Milk (1 gal)",           "category": "dairy",       "qty": 1 },
+        { "name": "Eggs (dozen)",            "category": "dairy",       "qty": 1 },
+        { "name": "Bread (loaf)",            "category": "bakery",      "qty": 1 },
+        { "name": "Chicken breast (2 lb)",   "category": "meat",        "qty": 1 },
+        { "name": "Bananas",                 "category": "produce",     "qty": 1 },
+        { "name": "Pasta (1 lb)",            "category": "pantry",      "qty": 2 },
+        { "name": "Orange juice",            "category": "beverages",   "qty": 1 },
+        { "name": "Basmati rice (10 lb)",    "category": "rice/grains", "qty": 1 },
+        { "name": "Turmeric powder",         "category": "spices",      "qty": 1 },
+        { "name": "Dish soap",               "category": "household",   "qty": 1 }
+      ]
+    },
+    {
+      "id": "w2",
+      "week": "Week 2 (Mar 10–16)",
+      "items": [
+        { "name": "Milk (1 gal)",            "category": "dairy",       "qty": 1 },
+        { "name": "Eggs (dozen)",             "category": "dairy",       "qty": 2 },
+        { "name": "Greek yogurt",             "category": "dairy",       "qty": 3 },
+        { "name": "Baby spinach",             "category": "produce",     "qty": 1 },
+        { "name": "Ground beef (1 lb)",       "category": "meat",        "qty": 2 },
+        { "name": "Garam masala",             "category": "spices",      "qty": 1 },
+        { "name": "Chapati flour (10 lb)",    "category": "rice/grains", "qty": 1 },
+        { "name": "Kimchi",                   "category": "pantry",      "qty": 1 },
+        { "name": "Cheddar cheese",           "category": "dairy",       "qty": 1 },
+        { "name": "Paper towels",             "category": "household",   "qty": 1 }
+      ]
+    },
+    {
+      "id": "w3",
+      "week": "Week 3 (Mar 17–23)",
+      "items": [
+        { "name": "Milk (1 gal)",            "category": "dairy",       "qty": 1 },
+        { "name": "Bread (loaf)",             "category": "bakery",      "qty": 2 },
+        { "name": "Chicken breast (2 lb)",    "category": "meat",        "qty": 2 },
+        { "name": "Strawberries",             "category": "produce",     "qty": 1 },
+        { "name": "Frozen dumplings",         "category": "frozen",      "qty": 2 },
+        { "name": "Cumin seeds",              "category": "spices",      "qty": 1 },
+        { "name": "Sesame oil",               "category": "pantry",      "qty": 1 },
+        { "name": "Soda (12-pk)",             "category": "beverages",   "qty": 1 }
+      ]
+    },
+    {
+      "id": "w4",
+      "week": "Week 4 (Mar 24–30)",
+      "items": [
+        { "name": "Milk (1 gal)",            "category": "dairy",       "qty": 1 },
+        { "name": "Eggs (dozen)",             "category": "dairy",       "qty": 1 },
+        { "name": "Greek yogurt",             "category": "dairy",       "qty": 2 },
+        { "name": "Salmon fillet",            "category": "meat",        "qty": 1 },
+        { "name": "Basmati rice (10 lb)",     "category": "rice/grains", "qty": 1 },
+        { "name": "Chili powder",             "category": "spices",      "qty": 1 },
+        { "name": "Orange juice",             "category": "beverages",   "qty": 1 },
+        { "name": "Laundry detergent",        "category": "household",   "qty": 1 },
+        { "name": "Baby spinach",             "category": "produce",     "qty": 1 },
+        { "name": "Bananas",                  "category": "produce",     "qty": 1 }
+      ]
+    }
+  ]
+}
