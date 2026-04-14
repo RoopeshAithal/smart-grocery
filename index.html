@@ -2,39 +2,48 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
-<meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="Smart Grocery"/>
 <meta name="theme-color" content="#1d9e75"/>
-<title>Smart Grocery Optimizer</title>
+<meta name="description" content="Smart Grocery Optimizer – compare stores, scan lists, save money"/>
+<link rel="manifest" href="manifest.json"/>
+<link rel="apple-touch-icon" href="icon-192.png"/>
+<title>Smart Grocery</title>
 <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 <style>
-  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
-  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f3;color:#1a1a1a;min-height:100vh;}
-  #root{max-width:480px;margin:0 auto;background:#fff;min-height:100vh;position:relative;}
-  input,select,textarea,button{font-family:inherit;outline:none;}
-  input[type=text],input[type=search],textarea{border:0.5px solid #ccc;border-radius:8px;padding:8px 10px;font-size:14px;width:100%;background:#fff;color:#1a1a1a;}
-  input[type=text]:focus,textarea:focus{border-color:#1d9e75;box-shadow:0 0 0 2px #1d9e7520;}
-  input[type=range]{width:100%;accent-color:#1d9e75;}
-  button{border:0.5px solid #ccc;border-radius:8px;padding:7px 13px;font-size:13px;background:#fff;color:#1a1a1a;cursor:pointer;transition:background .15s;}
-  button:active{transform:scale(0.97);}
-  select{border:0.5px solid #ccc;border-radius:8px;padding:6px 8px;font-size:13px;background:#fff;color:#1a1a1a;}
-  details>summary{list-style:none;} details>summary::-webkit-details-marker{display:none;}
-  ::-webkit-scrollbar{width:4px;} ::-webkit-scrollbar-thumb{background:#ccc;border-radius:2px;}
-  @media(prefers-color-scheme:dark){
-    body{background:#1a1a1a;color:#f0f0f0;}
-    #root{background:#111;}
-    input[type=text],select,textarea,button{background:#1e1e1e;color:#f0f0f0;border-color:#333;}
-    input[type=text]:focus,textarea:focus{border-color:#1d9e75;}
-  }
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;overscroll-behavior:none;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f5f5f3;color:#1a1a1a;height:100%;overflow:hidden;}
+#root{max-width:480px;margin:0 auto;background:#fff;height:100%;display:flex;flex-direction:column;position:relative;overflow:hidden;}
+input,select,textarea,button{font-family:inherit;outline:none;}
+input[type=text],input[type=search],input[type=password],textarea{border:0.5px solid #ddd;border-radius:10px;padding:9px 12px;font-size:14px;width:100%;background:#fff;color:#1a1a1a;-webkit-appearance:none;}
+input:focus,textarea:focus{border-color:#1d9e75;box-shadow:0 0 0 3px #1d9e7518;}
+input[type=range]{width:100%;accent-color:#1d9e75;height:4px;}
+button{border:0.5px solid #ddd;border-radius:10px;padding:8px 14px;font-size:13px;background:#fff;color:#1a1a1a;cursor:pointer;}
+button:active{opacity:0.75;}
+select{border:0.5px solid #ddd;border-radius:8px;padding:6px 8px;font-size:13px;background:#fff;color:#1a1a1a;-webkit-appearance:none;}
+details>summary{list-style:none;}details>summary::-webkit-details-marker{display:none;}
+.scroll{overflow-y:auto;-webkit-overflow-scrolling:touch;flex:1;}
+::-webkit-scrollbar{display:none;}
+@media(prefers-color-scheme:dark){
+  body{background:#111;}
+  #root{background:#1a1a1a;}
+  input[type=text],input[type=password],textarea,button,select{background:#2a2a2a;color:#f0f0f0;border-color:#333;}
+  input:focus,textarea:focus{border-color:#1d9e75;}
+}
 </style>
 </head>
 <body>
 <div id="root"></div>
 <script type="text/babel">
-const{useState,useRef}=React;
+const{useState,useEffect,useRef,useCallback}=React;
+
+const DB_NAME="SmartGroceryDB",DB_VER=1;
+const STORE_NAMES={list:"groceryList",history:"history",settings:"settings",stores:"customStores"};
 
 const CAT_COLORS={
   dairy:{bg:"#b5d4f4",text:"#0c447c"},
@@ -52,105 +61,129 @@ const CAT_COLORS={
 const ALL_CATS=Object.keys(CAT_COLORS);
 const BASE_PRICES={dairy:4.5,produce:3.2,pantry:2.8,meat:8.5,bakery:3.5,beverages:4.2,frozen:5.5,household:6.0,spices:3.0,snacks:2.5,"rice/grains":2.8};
 
-const INIT_HISTORY={
-  "Week 1 (Mar 3–9)":[
+const INIT_HISTORY=[
+  {id:"w1",week:"Week 1 (Mar 3–9)",items:[
     {name:"Milk (1 gal)",category:"dairy",qty:1},{name:"Eggs (dozen)",category:"dairy",qty:1},
     {name:"Bread (loaf)",category:"bakery",qty:1},{name:"Chicken breast (2 lb)",category:"meat",qty:1},
     {name:"Bananas",category:"produce",qty:1},{name:"Pasta (1 lb)",category:"pantry",qty:2},
-    {name:"Orange juice",category:"beverages",qty:1},{name:"Basmati rice (10 lb)",category:"rice/grains",qty:1},
-    {name:"Turmeric powder",category:"spices",qty:1},{name:"Dish soap",category:"household",qty:1},
-  ],
-  "Week 2 (Mar 10–16)":[
+    {name:"Basmati rice (10 lb)",category:"rice/grains",qty:1},{name:"Turmeric powder",category:"spices",qty:1},
+    {name:"Orange juice",category:"beverages",qty:1},{name:"Dish soap",category:"household",qty:1},
+  ]},
+  {id:"w2",week:"Week 2 (Mar 10–16)",items:[
     {name:"Milk (1 gal)",category:"dairy",qty:1},{name:"Eggs (dozen)",category:"dairy",qty:2},
-    {name:"Greek yogurt",category:"dairy",qty:3},{name:"Apples (3 lb)",category:"produce",qty:1},
-    {name:"Baby spinach",category:"produce",qty:1},{name:"Ground beef (1 lb)",category:"meat",qty:2},
-    {name:"Garam masala",category:"spices",qty:1},{name:"Chapati flour (10 lb)",category:"rice/grains",qty:1},
-    {name:"Kimchi",category:"pantry",qty:1},{name:"Paper towels",category:"household",qty:1},
-  ],
-  "Week 3 (Mar 17–23)":[
+    {name:"Greek yogurt",category:"dairy",qty:3},{name:"Baby spinach",category:"produce",qty:1},
+    {name:"Ground beef (1 lb)",category:"meat",qty:2},{name:"Garam masala",category:"spices",qty:1},
+    {name:"Chapati flour (10 lb)",category:"rice/grains",qty:1},{name:"Kimchi",category:"pantry",qty:1},
+    {name:"Cheddar cheese",category:"dairy",qty:1},{name:"Paper towels",category:"household",qty:1},
+  ]},
+  {id:"w3",week:"Week 3 (Mar 17–23)",items:[
     {name:"Milk (1 gal)",category:"dairy",qty:1},{name:"Bread (loaf)",category:"bakery",qty:2},
     {name:"Chicken breast (2 lb)",category:"meat",qty:2},{name:"Strawberries",category:"produce",qty:1},
-    {name:"Frozen dumplings",category:"frozen",qty:2},{name:"Sesame oil",category:"pantry",qty:1},
-    {name:"Cumin seeds",category:"spices",qty:1},{name:"Soda (12-pk)",category:"beverages",qty:1},
-  ],
-  "Week 4 (Mar 24–30)":[
+    {name:"Frozen dumplings",category:"frozen",qty:2},{name:"Cumin seeds",category:"spices",qty:1},
+    {name:"Sesame oil",category:"pantry",qty:1},{name:"Soda (12-pk)",category:"beverages",qty:1},
+  ]},
+  {id:"w4",week:"Week 4 (Mar 24–30)",items:[
     {name:"Milk (1 gal)",category:"dairy",qty:1},{name:"Eggs (dozen)",category:"dairy",qty:1},
-    {name:"Greek yogurt",category:"dairy",qty:2},{name:"Bananas",category:"produce",qty:1},
-    {name:"Salmon fillet",category:"meat",qty:1},{name:"Basmati rice (10 lb)",category:"rice/grains",qty:1},
-    {name:"Chili powder",category:"spices",qty:1},{name:"Orange juice",category:"beverages",qty:1},
-    {name:"Laundry detergent",category:"household",qty:1},
-  ],
-};
+    {name:"Greek yogurt",category:"dairy",qty:2},{name:"Salmon fillet",category:"meat",qty:1},
+    {name:"Basmati rice (10 lb)",category:"rice/grains",qty:1},{name:"Chili powder",category:"spices",qty:1},
+    {name:"Orange juice",category:"beverages",qty:1},{name:"Laundry detergent",category:"household",qty:1},
+    {name:"Baby spinach",category:"produce",qty:1},{name:"Bananas",category:"produce",qty:1},
+  ]},
+];
 
 const STORE_CATALOG={
-  aldi:{name:"ALDI",flag:"🛒",tier:1,type:"mainstream",strengths:["produce","dairy","pantry"],mult:{dairy:.9,produce:.85,pantry:.9,meat:1.0,bakery:.95,beverages:.95,frozen:.9,household:1.0,spices:1.1,"rice/grains":1.1,snacks:1.0}},
-  walmart:{name:"Walmart",flag:"🛒",tier:1,type:"mainstream",strengths:["pantry","beverages","household"],mult:{dairy:1.0,produce:1.0,pantry:.85,meat:.95,bakery:.9,beverages:.85,frozen:.9,household:.85,spices:1.0,"rice/grains":1.0,snacks:.95}},
-  foodlion:{name:"Food Lion",flag:"🛒",tier:2,type:"mainstream",strengths:["meat","dairy","bakery"],mult:{dairy:1.05,produce:1.05,pantry:1.05,meat:.9,bakery:1.0,beverages:1.05,frozen:1.05,household:1.1,spices:1.1,"rice/grains":1.1,snacks:1.0}},
-  safeway:{name:"Safeway",flag:"🛒",tier:2,type:"mainstream",strengths:["deli","bakery"],mult:{dairy:1.15,produce:1.1,pantry:1.15,meat:1.05,bakery:1.1,beverages:1.1,frozen:1.1,household:1.1,spices:1.15,"rice/grains":1.15,snacks:1.1}},
-  costco:{name:"Costco",flag:"🛒",tier:1,type:"mainstream",strengths:["bulk","meat","pantry"],mult:{dairy:.8,produce:.85,pantry:.75,meat:.85,bakery:.85,beverages:.8,frozen:.85,household:.75,spices:.9,"rice/grains":.75,snacks:.8}},
-  traderjoes:{name:"Trader Joe's",flag:"🛒",tier:2,type:"mainstream",strengths:["frozen","snacks"],mult:{dairy:1.05,produce:1.0,pantry:.95,meat:1.1,bakery:1.0,beverages:1.05,frozen:.9,household:1.05,spices:1.0,"rice/grains":1.05,snacks:.9}},
-  patelBros:{name:"Patel Brothers",flag:"🇮🇳",tier:1,type:"indian",strengths:["spices","rice/grains","pantry"],mult:{dairy:.85,produce:.9,pantry:.8,meat:.95,bakery:.9,beverages:.9,frozen:.9,household:.95,spices:.55,"rice/grains":.55,snacks:.7}},
-  taraVani:{name:"Tara Vani",flag:"🇮🇳",tier:1,type:"indian",strengths:["spices","rice/grains","snacks"],mult:{dairy:.88,produce:.85,pantry:.8,meat:.95,bakery:.88,beverages:.88,frozen:.9,household:.95,spices:.5,"rice/grains":.5,snacks:.65}},
-  lottePlaza:{name:"Lotte Plaza",flag:"🇰🇷",tier:2,type:"korean",strengths:["produce","meat","frozen"],mult:{dairy:1.0,produce:.85,pantry:.9,meat:.88,bakery:.95,beverages:.9,frozen:.8,household:1.0,spices:.9,"rice/grains":.75,snacks:.75}},
-  hmart:{name:"H Mart",flag:"🇰🇷",tier:2,type:"korean",strengths:["produce","seafood","frozen"],mult:{dairy:1.0,produce:.8,pantry:.9,meat:.85,bakery:.95,beverages:.9,frozen:.78,household:1.0,spices:.85,"rice/grains":.72,snacks:.7}},
-  grandMart:{name:"Grand Mart",flag:"🌏",tier:1,type:"asian",strengths:["produce","rice/grains","spices"],mult:{dairy:.95,produce:.8,pantry:.82,meat:.9,bakery:.9,beverages:.88,frozen:.82,household:.95,spices:.65,"rice/grains":.6,snacks:.72}},
+  aldi:      {name:"ALDI",         flag:"🛒",tier:1,type:"mainstream",strengths:["produce","dairy","pantry"],       mult:{dairy:.9,  produce:.85,pantry:.9, meat:1.0, bakery:.95,beverages:.95,frozen:.9, household:1.0, spices:1.1,"rice/grains":1.1,snacks:1.0}},
+  walmart:   {name:"Walmart",      flag:"🛒",tier:1,type:"mainstream",strengths:["pantry","beverages","household"], mult:{dairy:1.0, produce:1.0,pantry:.85,meat:.95, bakery:.9, beverages:.85,frozen:.9, household:.85, spices:1.0,"rice/grains":1.0,snacks:.95}},
+  foodlion:  {name:"Food Lion",    flag:"🛒",tier:2,type:"mainstream",strengths:["meat","dairy","bakery"],          mult:{dairy:1.05,produce:1.05,pantry:1.05,meat:.9,bakery:1.0,beverages:1.05,frozen:1.05,household:1.1,spices:1.1,"rice/grains":1.1,snacks:1.0}},
+  safeway:   {name:"Safeway",      flag:"🛒",tier:2,type:"mainstream",strengths:["deli","bakery","meat"],           mult:{dairy:1.15,produce:1.1,pantry:1.15,meat:1.05,bakery:1.1,beverages:1.1,frozen:1.1,household:1.1,spices:1.15,"rice/grains":1.15,snacks:1.1}},
+  traderjoes:{name:"Trader Joe's", flag:"🛒",tier:2,type:"mainstream",strengths:["frozen","snacks","produce"],     mult:{dairy:1.05,produce:1.0,pantry:.95,meat:1.1, bakery:1.0,beverages:1.05,frozen:.9, household:1.05,spices:1.0,"rice/grains":1.05,snacks:.9}},
+  wholeFoods:{name:"Whole Foods",  flag:"🛒",tier:3,type:"mainstream",strengths:["organic","produce","meat"],      mult:{dairy:1.4, produce:1.2,pantry:1.4,meat:1.4, bakery:1.3,beverages:1.3,frozen:1.3, household:1.4, spices:1.3,"rice/grains":1.4,snacks:1.3}},
+  costco:    {name:"Costco",       flag:"🏪",tier:1,type:"warehouse", strengths:["bulk","meat","pantry","household"],mult:{dairy:.8,produce:.85,pantry:.75,meat:.82,bakery:.82,beverages:.78,frozen:.82,household:.72,spices:.88,"rice/grains":.72,snacks:.78}},
+  samsclub:  {name:"Sam's Club",   flag:"🏪",tier:1,type:"warehouse", strengths:["bulk","beverages","household","frozen"],mult:{dairy:.82,produce:.87,pantry:.76,meat:.83,bakery:.84,beverages:.76,frozen:.83,household:.73,spices:.9,"rice/grains":.74,snacks:.79}},
+  patelBros: {name:"Patel Brothers",flag:"🇮🇳",tier:1,type:"indian",  strengths:["spices","rice/grains","pantry","dairy"],mult:{dairy:.85,produce:.9,pantry:.8,meat:.95,bakery:.9,beverages:.9,frozen:.9,household:.95,spices:.55,"rice/grains":.55,snacks:.7}},
+  taraVani:  {name:"Tara Vani",    flag:"🇮🇳",tier:1,type:"indian",   strengths:["spices","rice/grains","snacks"],  mult:{dairy:.88,produce:.85,pantry:.8,meat:.95,bakery:.88,beverages:.88,frozen:.9,household:.95,spices:.5,"rice/grains":.5,snacks:.65}},
+  lottePlaza:{name:"Lotte Plaza",  flag:"🇰🇷",tier:2,type:"korean",   strengths:["produce","meat","frozen","snacks"],mult:{dairy:1.0,produce:.85,pantry:.9,meat:.88,bakery:.95,beverages:.9,frozen:.8,household:1.0,spices:.9,"rice/grains":.75,snacks:.75}},
+  hmart:     {name:"H Mart",       flag:"🇰🇷",tier:2,type:"korean",   strengths:["produce","seafood","frozen"],     mult:{dairy:1.0,produce:.8,pantry:.9,meat:.85,bakery:.95,beverages:.9,frozen:.78,household:1.0,spices:.85,"rice/grains":.72,snacks:.7}},
+  grandMart: {name:"Grand Mart",   flag:"🌏",tier:1,type:"asian",     strengths:["produce","rice/grains","spices"], mult:{dairy:.95,produce:.8,pantry:.82,meat:.9,bakery:.9,beverages:.88,frozen:.82,household:.95,spices:.65,"rice/grains":.6,snacks:.72}},
 };
 
-const TYPE_META={mainstream:{label:"Mainstream",color:"#378add"},indian:{label:"Indian",color:"#d85a30"},korean:{label:"Korean",color:"#7f77dd"},asian:{label:"Asian",color:"#1d9e75"},custom:{label:"Custom",color:"#888780"}};
+const TYPE_META={
+  mainstream:{label:"Mainstream",color:"#378add"},
+  warehouse: {label:"Warehouse", color:"#854f0b"},
+  indian:    {label:"Indian",    color:"#d85a30"},
+  korean:    {label:"Korean",    color:"#7f77dd"},
+  asian:     {label:"Asian",     color:"#1d9e75"},
+  custom:    {label:"Custom",    color:"#888780"},
+};
 const TIER_LABELS={1:"Budget",2:"Mid-range",3:"Premium"};
 
-function uid(){return Math.random().toString(36).slice(2);}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2);}
 function guessCat(n){
-  n=n.toLowerCase();
-  if(/milk|cheese|yogurt|butter|cream|egg/.test(n))return"dairy";
-  if(/apple|banana|spinach|broccoli|tomato|onion|garlic|berry|fruit|vegetable|carrot|mango|avocado/.test(n))return"produce";
-  if(/chicken|beef|pork|salmon|fish|shrimp|lamb|turkey|meat/.test(n))return"meat";
-  if(/bread|roll|bagel|muffin|cake|cookie/.test(n))return"bakery";
-  if(/rice|flour|chapati|atta|lentil|dal|quinoa|oat/.test(n))return"rice/grains";
-  if(/turmeric|cumin|garam|masala|chili|spice|coriander|cardamom|cinnamon/.test(n))return"spices";
-  if(/juice|soda|water|tea|coffee|drink/.test(n))return"beverages";
+  n=(n||"").toLowerCase();
+  if(/milk|cheese|yogurt|butter|cream|paneer|ghee/.test(n))return"dairy";
+  if(/egg/.test(n))return"dairy";
+  if(/apple|banana|spinach|broccoli|tomato|onion|garlic|berry|fruit|vegetable|carrot|mango|avocado|pepper|lettuce|cucumber/.test(n))return"produce";
+  if(/chicken|beef|pork|salmon|fish|shrimp|lamb|turkey|meat|mutton|goat/.test(n))return"meat";
+  if(/bread|roll|bagel|muffin|roti|naan|pita/.test(n))return"bakery";
+  if(/rice|flour|chapati|atta|lentil|dal|quinoa|oat|barley|semolina/.test(n))return"rice/grains";
+  if(/turmeric|cumin|garam|masala|chili|spice|coriander|cardamom|cinnamon|clove|jeera|pepper|paprika/.test(n))return"spices";
+  if(/juice|soda|water|tea|coffee|drink|lassi|kombucha/.test(n))return"beverages";
   if(/frozen|ice cream|pizza|dumpling/.test(n))return"frozen";
-  if(/soap|detergent|paper|towel|tissue|shampoo|toothpaste/.test(n))return"household";
-  if(/chip|snack|cracker|nuts|candy|chocolate/.test(n))return"snacks";
+  if(/soap|detergent|paper|towel|tissue|shampoo|toothpaste|cleaner|bleach/.test(n))return"household";
+  if(/chip|snack|cracker|nuts|candy|chocolate|biscuit|namkeen|popcorn/.test(n))return"snacks";
   return"pantry";
 }
 function parseTextList(raw){
-  return raw.split(/\n|,|;/).map(l=>l.trim()).filter(Boolean).map(line=>{
-    const m=line.match(/^(\d+)[x\s]+(.+)/i)||line.match(/^(.+?)\s+[x×]?\s*(\d+)$/i);
+  return raw.split(/\n|;/).map(l=>l.trim()).filter(Boolean).map(line=>{
+    line=line.replace(/^[-•*\d.]+\s*/,"");
+    const m=line.match(/^(\d+)\s*[x×]\s*(.+)/i)||line.match(/^(.+?)\s+[x×]\s*(\d+)$/i);
     let name=line,qty=1;
     if(m){if(/^\d/.test(line)){qty=parseInt(m[1]);name=m[2];}else{name=m[1];qty=parseInt(m[2]);}}
-    name=name.replace(/^\W+|\W+$/g,"").replace(/\s+/g," ").trim();
-    if(!name)return null;
-    return{id:uid(),name,qty:isNaN(qty)?1:qty,category:guessCat(name)};
+    name=name.replace(/\$[\d.]+/g,"").replace(/\(.*?\)/g,"").replace(/^\W+|\W+$/g,"").replace(/\s+/g," ").trim();
+    if(!name||name.length<2)return null;
+    return{id:uid(),name,qty:isNaN(qty)?1:Math.max(1,qty),category:guessCat(name)};
   }).filter(Boolean);
 }
-function parseEmail(text){
-  const lines=text.split(/\n/).map(l=>l.trim()).filter(Boolean);
-  const items=[];
-  lines.forEach(line=>{
-    const m=line.match(/^[-•*\d.]+\s*(.+)/);
-    if(m){const r=m[1].replace(/\$[\d.]+/g,"").replace(/\(.*?\)/g,"").trim();items.push(...parseTextList(r));}
+
+/* ── IndexedDB ── */
+function openDB(){
+  return new Promise((res,rej)=>{
+    const req=indexedDB.open(DB_NAME,DB_VER);
+    req.onupgradeneeded=e=>{
+      const db=e.target.result;
+      Object.values(STORE_NAMES).forEach(s=>{if(!db.objectStoreNames.contains(s))db.createObjectStore(s,{keyPath:"id"});});
+    };
+    req.onsuccess=e=>res(e.target.result);
+    req.onerror=()=>rej(req.error);
   });
-  return items.length?items:parseTextList(text);
+}
+async function dbGetAll(s){const db=await openDB();return new Promise((res,rej)=>{const tx=db.transaction(s,"readonly");const r=tx.objectStore(s).getAll();r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});}
+async function dbPut(s,obj){const db=await openDB();return new Promise((res,rej)=>{const tx=db.transaction(s,"readwrite");tx.objectStore(s).put(obj);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error);});}
+async function dbDelete(s,id){const db=await openDB();return new Promise((res,rej)=>{const tx=db.transaction(s,"readwrite");tx.objectStore(s).delete(id);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error);});}
+async function dbClear(s){const db=await openDB();return new Promise((res,rej)=>{const tx=db.transaction(s,"readwrite");tx.objectStore(s).clear();tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error);});}
+async function getStorageInfo(){
+  if(navigator.storage&&navigator.storage.estimate){
+    const{usage,quota}=await navigator.storage.estimate();
+    return{usage:Math.round((usage||0)/1024),quota:Math.round((quota||0)/1024/1024),pct:quota?Math.round((usage/quota)*100):0};
+  }
+  return{usage:0,quota:0,pct:0};
 }
 
+/* ── App ── */
 function App(){
   const[tab,setTab]=useState("list");
-  const[list,setList]=useState(()=>{
-    const all=Object.values(INIT_HISTORY).flat();
-    const map={};
-    all.forEach(it=>{const k=it.name.toLowerCase();if(map[k])map[k].qty+=it.qty;else map[k]={...it,id:uid()};});
-    return Object.values(map);
-  });
-  const[history,setHistory]=useState(INIT_HISTORY);
+  const[list,setList]=useState([]);
+  const[history,setHistory]=useState([]);
   const[checked,setChecked]=useState({});
   const[newItem,setNewItem]=useState("");
   const[newCat,setNewCat]=useState("pantry");
   const[newQty,setNewQty]=useState(1);
-  const[preferredStores,setPreferredStores]=useState(["aldi","walmart","foodlion","patelBros","lottePlaza"]);
+  const[preferredStores,setPreferredStores]=useState(["aldi","walmart","foodlion","patelBros","lottePlaza","costco","samsclub"]);
   const[customStores,setCustomStores]=useState([]);
   const[locationInput,setLocationInput]=useState("Hanover, MD");
   const[radius,setRadius]=useState(10);
+  const[apiKey,setApiKey]=useState("");
+  const[showApiKey,setShowApiKey]=useState(false);
   const[scanModal,setScanModal]=useState(false);
   const[scanMode,setScanMode]=useState("text");
   const[scanText,setScanText]=useState("");
@@ -158,177 +191,260 @@ function App(){
   const[scanPreview,setScanPreview]=useState([]);
   const[scanError,setScanError]=useState("");
   const[imgProcessing,setImgProcessing]=useState(false);
-  const[apiKey,setApiKey]=useState(()=>localStorage.getItem("sg_apikey")||"");
-  const[showApiKey,setShowApiKey]=useState(false);
   const[histEdit,setHistEdit]=useState(false);
   const[selHist,setSelHist]=useState({});
   const[addStorePanel,setAddStorePanel]=useState(false);
   const[newStore,setNewStore]=useState({name:"",address:"",specialty:""});
+  const[storageInfo,setStorageInfo]=useState({usage:0,quota:0,pct:0});
+  const[isOnline,setIsOnline]=useState(navigator.onLine);
+  const[showInstall,setShowInstall]=useState(false);
+  const[deferredPrompt,setDeferredPrompt]=useState(null);
+  const[dbReady,setDbReady]=useState(false);
   const fileRef=useRef();
   const camRef=useRef();
 
-  const allStores={...STORE_CATALOG,...Object.fromEntries(customStores.map(s=>[s.id,s]))};
-  const activeIds=preferredStores.filter(id=>allStores[id]);
-  const storeTotals=activeIds.map(id=>({id,store:allStores[id],total:list.reduce((s,it)=>s+(BASE_PRICES[it.category]||3.5)*(allStores[id].mult[it.category]||1)*it.qty,0)})).sort((a,b)=>a.total-b.total);
-  const minTotal=storeTotals[0]?.total||0;
-  const catGroups={};
-  list.forEach(it=>{if(!catGroups[it.category])catGroups[it.category]=[];catGroups[it.category].push(it);});
-  const freqMap={};
-  Object.values(history).flat().forEach(it=>{const k=it.name.toLowerCase();freqMap[k]=(freqMap[k]||0)+1;});
+  useEffect(()=>{
+    async function load(){
+      try{
+        const[ld,hd,sd,cd]=await Promise.all([dbGetAll(STORE_NAMES.list),dbGetAll(STORE_NAMES.history),dbGetAll(STORE_NAMES.settings),dbGetAll(STORE_NAMES.stores)]);
+        if(ld.length)setList(ld);
+        else{
+          const map={};
+          INIT_HISTORY.forEach(h=>h.items.forEach(it=>{const k=it.name.toLowerCase();if(map[k])map[k].qty+=it.qty;else map[k]={...it,id:uid()};}));
+          const seeded=Object.values(map);
+          setList(seeded);
+          await Promise.all(seeded.map(it=>dbPut(STORE_NAMES.list,it)));
+        }
+        setHistory(hd.length?hd:[...INIT_HISTORY]);
+        if(!hd.length)await Promise.all(INIT_HISTORY.map(h=>dbPut(STORE_NAMES.history,h)));
+        const sm=Object.fromEntries(sd.map(s=>[s.id,s.value]));
+        if(sm.location)setLocationInput(sm.location);
+        if(sm.radius)setRadius(+sm.radius);
+        if(sm.apiKey)setApiKey(sm.apiKey);
+        if(sm.preferredStores)setPreferredStores(JSON.parse(sm.preferredStores));
+        setCustomStores(cd);
+        setDbReady(true);
+        getStorageInfo().then(setStorageInfo);
+      }catch(e){console.error(e);setDbReady(true);}
+    }
+    load();
+    const goOn=()=>setIsOnline(true),goOff=()=>setIsOnline(false);
+    window.addEventListener("online",goOn);window.addEventListener("offline",goOff);
+    window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();setDeferredPrompt(e);setShowInstall(true);});
+    if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
+    return()=>{window.removeEventListener("online",goOn);window.removeEventListener("offline",goOff);};
+  },[]);
 
-  function addItem(){if(!newItem.trim())return;setList(l=>[...l,{id:uid(),name:newItem.trim(),category:newCat,qty:newQty}]);setNewItem("");setNewQty(1);}
-  function removeItem(id){setList(l=>l.filter(i=>i.id!==id));}
-  function toggleCheck(id){setChecked(c=>({...c,[id]:!c[id]}));}
-  function updateQty(id,d){setList(l=>l.map(it=>it.id===id?{...it,qty:Math.max(1,it.qty+d)}:it));}
-  function updateItemCat(id,cat){setList(l=>l.map(it=>it.id===id?{...it,category:cat}:it));}
+  const saveListItem=useCallback(async it=>dbPut(STORE_NAMES.list,it),[]);
+  const delListItem=useCallback(async id=>dbDelete(STORE_NAMES.list,id),[]);
+  const saveSetting=useCallback(async(k,v)=>dbPut(STORE_NAMES.settings,{id:k,value:v}),[]);
+  const refreshStorage=useCallback(()=>getStorageInfo().then(setStorageInfo),[]);
 
-  function parseScan(){
-    setScanError("");
-    const items=parseTextList(scanText);
-    if(!items.length){setScanError("No items found — try a different format.");return;}
-    setScanPreview(items);
+  async function addItem(){
+    if(!newItem.trim())return;
+    const item={id:uid(),name:newItem.trim(),category:newCat,qty:newQty};
+    setList(l=>[...l,item]);await saveListItem(item);setNewItem("");setNewQty(1);refreshStorage();
   }
-  function confirmScan(){
-    const label=`Scanned ${new Date().toLocaleDateString("en-US",{month:"short",day:"numeric"})}`;
-    setHistory(h=>({[label]:scanPreview.map(({name,category,qty})=>({name,category,qty})),...h}));
-    setList(l=>{const m=[...l];scanPreview.forEach(it=>{const ex=m.find(x=>x.name.toLowerCase()===it.name.toLowerCase());if(ex)ex.qty+=it.qty;else m.push({...it,id:uid()});});return[...m];});
-    setScanModal(false);setScanText("");setScanPreview([]);setEmailText("");
+  async function removeItem(id){setList(l=>l.filter(i=>i.id!==id));await delListItem(id);refreshStorage();}
+  function toggleCheck(id){setChecked(c=>({...c,[id]:!c[id]}));}
+  async function clearChecked(){
+    const ids=Object.entries(checked).filter(([,v])=>v).map(([k])=>k);
+    setList(l=>l.filter(i=>!ids.includes(i.id)));setChecked({});
+    await Promise.all(ids.map(id=>delListItem(id)));refreshStorage();
+  }
+  async function updateQty(id,d){
+    setList(l=>{const u=l.map(it=>it.id===id?{...it,qty:Math.max(1,it.qty+d)}:it);u.forEach(it=>{if(it.id===id)saveListItem(it);});return u;});
+  }
+  async function updateItemCat(id,cat){
+    setList(l=>{const u=l.map(it=>it.id===id?{...it,category:cat}:it);u.forEach(it=>{if(it.id===id)saveListItem(it);});return u;});
+  }
+
+  async function handleLocation(v){setLocationInput(v);await saveSetting("location",v);}
+  async function handleRadius(v){setRadius(v);await saveSetting("radius",String(v));}
+  async function handleApiKey(v){setApiKey(v);await saveSetting("apiKey",v);}
+  async function handleStores(ids){setPreferredStores(ids);await saveSetting("preferredStores",JSON.stringify(ids));}
+
+  async function addWeekToList(wid){
+    const wk=history.find(h=>h.id===wid);if(!wk)return;
+    const upd=[...list];const toSave=[];
+    wk.items.forEach(it=>{const ex=upd.find(x=>x.name.toLowerCase()===it.name.toLowerCase());if(ex){ex.qty+=it.qty;toSave.push(ex);}else{const ni={...it,id:uid()};upd.push(ni);toSave.push(ni);}});
+    setList(upd);await Promise.all(toSave.map(i=>saveListItem(i)));refreshStorage();
+  }
+  async function deleteHistWeek(id){setHistory(h=>h.filter(x=>x.id!==id));await dbDelete(STORE_NAMES.history,id);refreshStorage();}
+  async function deleteSelHistItems(){
+    const upd=history.map(h=>({...h,items:h.items.filter((_,i)=>!selHist[`${h.id}::${i}`])})).filter(h=>h.items.length>0);
+    setHistory(upd);setSelHist({});await dbClear(STORE_NAMES.history);await Promise.all(upd.map(h=>dbPut(STORE_NAMES.history,h)));refreshStorage();
+  }
+
+  function parseScan(){setScanError("");const items=parseTextList(scanText);if(!items.length){setScanError("No items found. Try one item per line.");return;}setScanPreview(items);}
+  async function confirmScan(){
+    const wid=uid(),wlabel=`Scanned ${new Date().toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}`;
+    const nw={id:wid,week:wlabel,items:scanPreview.map(({name,category,qty})=>({name,category,qty}))};
+    setHistory(h=>[nw,...h]);await dbPut(STORE_NAMES.history,nw);
+    const upd=[...list];const toSave=[];
+    scanPreview.forEach(it=>{const ex=upd.find(x=>x.name.toLowerCase()===it.name.toLowerCase());if(ex){ex.qty+=it.qty;toSave.push(ex);}else{const ni={...it,id:uid()};upd.push(ni);toSave.push(ni);}});
+    setList(upd);await Promise.all(toSave.map(i=>saveListItem(i)));
+    setScanModal(false);setScanText("");setScanPreview([]);setEmailText("");setScanError("");refreshStorage();
   }
   async function handleImage(e){
     const file=e.target.files[0];if(!file)return;
-    if(!apiKey){setScanError("Enter your Anthropic API key in Settings to use image scanning.");return;}
+    if(!apiKey){setScanError("Add your Anthropic API key in Settings to use photo scanning.");return;}
     setImgProcessing(true);setScanError("");
     const reader=new FileReader();
     reader.onload=async()=>{
       try{
         const b64=reader.result.split(",")[1];
-        const res=await fetch("https://api.anthropic.com/v1/messages",{
-          method:"POST",
+        const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",
           headers:{"Content-Type":"application/json","x-api-key":apiKey,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
-          body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1000,messages:[{role:"user",content:[{type:"image",source:{type:"base64",media_type:file.type,data:b64}},{type:"text",text:"Extract all grocery items from this image. Return ONLY a JSON array like: [{\"name\":\"Milk\",\"qty\":1}]. No explanation, no markdown."}]}]})
-        });
+          body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:800,messages:[{role:"user",content:[
+            {type:"image",source:{type:"base64",media_type:file.type,data:b64}},
+            {type:"text",text:'Extract all grocery items from this image. Return ONLY a JSON array: [{"name":"Milk","qty":1}]. No markdown, no explanation.'}
+          ]}]})});
         const data=await res.json();
-        const raw=data.content?.find(b=>b.type==="text")?.text||"";
-        const clean=raw.replace(/```json|```/g,"").trim();
-        const parsed=JSON.parse(clean);
+        const raw=data.content?.find(b=>b.type==="text")?.text||"[]";
+        const parsed=JSON.parse(raw.replace(/```json|```/g,"").trim());
         setScanPreview(parsed.map(it=>({id:uid(),name:it.name||"",qty:it.qty||1,category:guessCat(it.name||"")})).filter(i=>i.name));
-      }catch(err){setScanError("Could not read image. Check your API key or try typing the list.");}
+      }catch{setScanError("Could not read image. Try typing the list instead.");}
       setImgProcessing(false);
     };
     reader.readAsDataURL(file);
   }
 
-  function saveApiKey(k){setApiKey(k);localStorage.setItem("sg_apikey",k);}
-  function addCustomStore(){
+  async function addCustomStore(){
     if(!newStore.name.trim())return;
     const id="custom_"+uid();
     const specs=newStore.specialty.split(",").map(s=>s.trim()).filter(Boolean);
-    const mult={};Object.keys(BASE_PRICES).forEach(c=>{mult[c]=1.0;});specs.forEach(c=>{if(mult[c]!==undefined)mult[c]=0.7;});
-    setCustomStores(cs=>[...cs,{id,name:newStore.name.trim(),address:newStore.address.trim(),flag:"📍",tier:2,type:"custom",strengths:specs.length?specs:["general"],mult}]);
-    setPreferredStores(ps=>[...ps,id]);
-    setNewStore({name:"",address:"",specialty:""});setAddStorePanel(false);
-  }
-  function deleteSelHist(){
-    const upd={};
-    Object.entries(history).forEach(([w,items])=>{const kept=items.filter((_,i)=>!selHist[`${w}::${i}`]);if(kept.length)upd[w]=kept;});
-    setHistory(upd);setSelHist({});
-  }
-  function addWeekToList(week){
-    setList(l=>{const m=[...l];(history[week]||[]).forEach(it=>{const ex=m.find(x=>x.name.toLowerCase()===it.name.toLowerCase());if(ex)ex.qty+=it.qty;else m.push({...it,id:uid()});});return[...m];});
+    const mult={};Object.keys(BASE_PRICES).forEach(c=>{mult[c]=1.0;});specs.forEach(c=>{if(c in mult)mult[c]=0.7;});
+    const s={id,name:newStore.name.trim(),address:newStore.address.trim(),flag:"📍",tier:2,type:"custom",strengths:specs.length?specs:["general"],mult};
+    setCustomStores(cs=>[...cs,s]);await dbPut(STORE_NAMES.stores,s);
+    await handleStores([...preferredStores,id]);
+    setNewStore({name:"",address:"",specialty:""});setAddStorePanel(false);refreshStorage();
   }
 
-  const T=(t)=>({flex:1,padding:"9px 0",fontSize:11,fontWeight:tab===t?500:400,background:"transparent",border:"none",borderBottom:tab===t?"2px solid #1d9e75":"2px solid transparent",color:tab===t?"#1d9e75":"#888",cursor:"pointer"});
+  async function installApp(){
+    if(!deferredPrompt)return;
+    deferredPrompt.prompt();
+    const{outcome}=await deferredPrompt.userChoice;
+    if(outcome==="accepted")setShowInstall(false);
+    setDeferredPrompt(null);
+  }
 
-  const green="#1d9e75";
-  const card={background:"#fff",border:"0.5px solid #e0e0e0",borderRadius:12,padding:"12px 14px",marginBottom:8};
+  const allStores={...STORE_CATALOG,...Object.fromEntries(customStores.map(s=>[s.id,s]))};
+  const activeIds=preferredStores.filter(id=>allStores[id]);
+  const storeTotals=activeIds.map(id=>({id,store:allStores[id],total:list.reduce((s,it)=>s+(BASE_PRICES[it.category]||3.5)*(allStores[id].mult[it.category]||1)*it.qty,0)})).sort((a,b)=>a.total-b.total);
+  const minTotal=storeTotals[0]?.total||0;
+  const catGroups={};list.forEach(it=>{if(!catGroups[it.category])catGroups[it.category]=[];catGroups[it.category].push(it);});
+  const freqMap={};history.forEach(h=>h.items.forEach(it=>{const k=it.name.toLowerCase();freqMap[k]=(freqMap[k]||0)+1;}));
+  const checkedCount=Object.values(checked).filter(Boolean).length;
+  const G="#1d9e75";
+  const T=t=>({flex:1,padding:"9px 0",fontSize:11,fontWeight:tab===t?600:400,background:"transparent",border:"none",borderBottom:tab===t?`2.5px solid ${G}`:"2px solid transparent",color:tab===t?G:"#999",cursor:"pointer"});
+
+  if(!dbReady)return(
+    <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:"100%",gap:12}}>
+      <div style={{width:48,height:48,borderRadius:"50%",background:G,display:"flex",alignItems:"center",justifyContent:"center"}}>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/></svg>
+      </div>
+      <div style={{fontSize:14,color:"#888"}}>Loading your data…</div>
+    </div>
+  );
 
   return(
-    <div style={{maxWidth:480,margin:"0 auto",background:"#fff",minHeight:"100vh"}}>
-      {/* Header */}
-      <div style={{padding:"12px 14px 0",borderBottom:"0.5px solid #e0e0e0",position:"sticky",top:0,background:"#fff",zIndex:10}}>
-        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
-          <div style={{width:32,height:32,borderRadius:"50%",background:green,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/></svg>
+    <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
+
+      {!isOnline&&<div style={{background:"#f59e0b",color:"#fff",fontSize:12,textAlign:"center",padding:"5px",fontWeight:500}}>Offline — app works fully without internet</div>}
+
+      <div style={{padding:"12px 14px 0",borderBottom:"0.5px solid #eee",background:"#fff",flexShrink:0}}>
+        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+          <div style={{width:34,height:34,borderRadius:"50%",background:G,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/></svg>
           </div>
           <div style={{flex:1}}>
-            <div style={{fontSize:15,fontWeight:600,color:"#111"}}>Smart Grocery</div>
-            <div style={{fontSize:11,color:"#888"}}>{locationInput} · {radius} mi · {activeIds.length} stores</div>
+            <div style={{fontSize:15,fontWeight:700,color:"#111"}}>Smart Grocery</div>
+            <div style={{fontSize:11,color:"#999"}}>{locationInput} · {radius}mi · {activeIds.length} stores · {isOnline?"🟢":"🔴"}</div>
           </div>
-          <button onClick={()=>setScanModal(true)} style={{fontSize:11,padding:"6px 12px",borderRadius:20,background:"#e8f7f2",border:"none",color:green,cursor:"pointer",fontWeight:600}}>+ Scan</button>
+          <button onClick={()=>setScanModal(true)} style={{fontSize:12,padding:"7px 13px",borderRadius:20,background:"#e8f7f2",border:"none",color:G,fontWeight:600,flexShrink:0}}>+ Scan</button>
+        </div>
+        <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:8}}>
+          <div style={{flex:1,height:3,background:"#eee",borderRadius:2,overflow:"hidden"}}>
+            <div style={{height:"100%",background:storageInfo.pct>80?"#e24b4a":G,borderRadius:2,width:`${Math.min(100,storageInfo.pct)}%`,transition:"width .3s"}}/>
+          </div>
+          <span style={{fontSize:10,color:"#ccc",whiteSpace:"nowrap"}}>{storageInfo.usage}KB / {storageInfo.quota}MB</span>
         </div>
         <div style={{display:"flex"}}>
-          {[["list","My List"],["compare","Compare"],["split","Split"],["history","History"],["settings","Settings"]].map(([t,l])=>(
+          {[["list","My List"],["compare","Compare"],["split","Split"],["history","History"],["help","Help"],["settings","⚙️"]].map(([t,l])=>(
             <button key={t} style={T(t)} onClick={()=>setTab(t)}>{l}</button>
           ))}
         </div>
       </div>
 
-      {/* Scan Modal */}
+      {showInstall&&(
+        <div style={{margin:"8px 14px 0",padding:"10px 14px",background:"#111",borderRadius:12,display:"flex",alignItems:"center",gap:10,flexShrink:0}}>
+          <div style={{flex:1,fontSize:12,color:"#fff"}}>Install Smart Grocery on your home screen for offline use</div>
+          <button onClick={installApp} style={{fontSize:12,padding:"6px 12px",background:G,color:"#fff",border:"none",borderRadius:8,whiteSpace:"nowrap"}}>Install</button>
+          <button onClick={()=>setShowInstall(false)} style={{border:"none",background:"none",color:"#888",fontSize:18,padding:0}}>×</button>
+        </div>
+      )}
+
+      {/* SCAN MODAL */}
       {scanModal&&(
-        <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,0.5)",zIndex:200,display:"flex",alignItems:"flex-end"}}>
-          <div style={{background:"#fff",width:"100%",maxWidth:480,margin:"0 auto",borderRadius:"16px 16px 0 0",padding:"16px 16px 32px",maxHeight:"85vh",overflowY:"auto"}}>
+        <div style={{position:"absolute",inset:0,background:"rgba(0,0,0,0.55)",zIndex:200,display:"flex",alignItems:"flex-end"}}
+          onClick={e=>{if(e.target===e.currentTarget){setScanModal(false);setScanPreview([]);setScanText("");setScanError("");}}}>
+          <div style={{background:"#fff",width:"100%",borderRadius:"18px 18px 0 0",padding:"16px 16px 40px",maxHeight:"88vh",overflowY:"auto"}}>
+            <div style={{width:36,height:4,background:"#ddd",borderRadius:2,margin:"0 auto 14px"}}/>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-              <div style={{fontWeight:600,fontSize:16}}>Add items</div>
-              <button onClick={()=>{setScanModal(false);setScanPreview([]);setScanText("");setScanError("");}} style={{border:"none",background:"none",fontSize:22,cursor:"pointer",color:"#888",lineHeight:1}}>×</button>
+              <div style={{fontWeight:700,fontSize:16}}>Add items</div>
+              <button onClick={()=>{setScanModal(false);setScanPreview([]);setScanText("");setScanError("");}} style={{border:"none",background:"none",fontSize:22,color:"#aaa",lineHeight:1}}>×</button>
             </div>
             <div style={{display:"flex",gap:6,marginBottom:14}}>
-              {[["text","Type / Paste"],["image","Photo"],["email","Email"]].map(([m,l])=>(
-                <button key={m} onClick={()=>{setScanMode(m);setScanPreview([]);setScanError("");}} style={{flex:1,fontSize:12,padding:"8px 0",borderRadius:10,background:scanMode===m?"#e8f7f2":"#f5f5f3",border:scanMode===m?`1.5px solid ${green}`:"0.5px solid #ddd",color:scanMode===m?green:"#555",cursor:"pointer",fontWeight:scanMode===m?600:400}}>{l}</button>
+              {[["text","✏️ Type"],["image","📷 Photo"],["email","📧 Email"]].map(([m,l])=>(
+                <button key={m} onClick={()=>{setScanMode(m);setScanPreview([]);setScanError("");}} style={{flex:1,fontSize:12,padding:"9px 0",borderRadius:10,background:scanMode===m?"#e8f7f2":"#f5f5f3",border:scanMode===m?`1.5px solid ${G}`:"0.5px solid #eee",color:scanMode===m?G:"#666",fontWeight:scanMode===m?600:400}}>{l}</button>
               ))}
             </div>
-
-            {scanMode==="text"&&(
-              <>
-                <textarea value={scanText} onChange={e=>setScanText(e.target.value)} rows={6}
-                  placeholder={"Milk\n2x Eggs\nChicken breast\nBasmati rice 2\nGaram masala, cumin..."}
-                  style={{width:"100%",fontSize:13,padding:10,borderRadius:10,border:"0.5px solid #ccc",resize:"vertical"}}/>
-                <button onClick={parseScan} style={{width:"100%",marginTop:8,padding:10,fontSize:14,fontWeight:600,background:green,color:"#fff",border:"none",borderRadius:10,cursor:"pointer"}}>Parse list</button>
-              </>
-            )}
+            {scanMode==="text"&&(<>
+              <textarea value={scanText} onChange={e=>setScanText(e.target.value)} rows={6}
+                placeholder={"One item per line:\nMilk\n2x Eggs\nChicken breast\nBasmati rice 2\nGaram masala"}
+                style={{width:"100%",fontSize:13,padding:"10px 12px",borderRadius:10,border:"0.5px solid #ddd",resize:"none",lineHeight:1.6}}/>
+              <button onClick={parseScan} style={{width:"100%",marginTop:8,padding:11,fontSize:14,fontWeight:600,background:G,color:"#fff",border:"none",borderRadius:10}}>Parse list</button>
+            </>)}
             {scanMode==="image"&&(
               <div>
-                <div style={{padding:20,border:"1.5px dashed #ccc",borderRadius:10,textAlign:"center",marginBottom:10,background:"#fafafa"}}>
-                  {imgProcessing?<div style={{color:"#888",fontSize:13}}>Reading image with AI…</div>:<div style={{color:"#888",fontSize:13}}>Upload or take a photo of your handwritten list, receipt, or fridge note</div>}
+                <div style={{padding:"24px 20px",border:"1.5px dashed #ddd",borderRadius:12,textAlign:"center",marginBottom:10,background:"#fafafa"}}>
+                  {imgProcessing?<div style={{color:"#888",fontSize:13}}>AI is reading your image…</div>:<div style={{color:"#aaa",fontSize:13,lineHeight:1.6}}>Take a photo of your handwritten list,<br/>receipt, fridge note, or shopping list</div>}
                 </div>
-                {!apiKey&&<div style={{fontSize:12,color:"#e24b4a",marginBottom:8,padding:"8px 10px",background:"#fef2f2",borderRadius:8}}>Set your Anthropic API key in Settings to enable image scanning.</div>}
+                {!apiKey&&<div style={{fontSize:12,color:"#e24b4a",marginBottom:8,padding:"8px 12px",background:"#fef2f2",borderRadius:8}}>Set your Anthropic API key in Settings to enable photo scanning.</div>}
                 <div style={{display:"flex",gap:8}}>
-                  <button onClick={()=>fileRef.current.click()} style={{flex:1,padding:10,fontSize:13,borderRadius:10,cursor:"pointer"}}>Upload photo</button>
-                  <button onClick={()=>camRef.current.click()} style={{flex:1,padding:10,fontSize:13,borderRadius:10,cursor:"pointer"}}>Take photo</button>
+                  <button onClick={()=>fileRef.current.click()} style={{flex:1,padding:11,fontSize:13,borderRadius:10}}>📁 Upload</button>
+                  <button onClick={()=>camRef.current.click()} style={{flex:1,padding:11,fontSize:13,borderRadius:10}}>📷 Camera</button>
                 </div>
                 <input ref={fileRef} type="file" accept="image/*" style={{display:"none"}} onChange={handleImage}/>
                 <input ref={camRef} type="file" accept="image/*" capture="environment" style={{display:"none"}} onChange={handleImage}/>
               </div>
             )}
-            {scanMode==="email"&&(
-              <>
-                <div style={{fontSize:12,color:"#888",marginBottom:6}}>Paste email body with grocery list, meal plan, or order confirmation.</div>
-                <textarea value={emailText} onChange={e=>setEmailText(e.target.value)} rows={7}
-                  placeholder={"Hi, here's this week's list:\n- Milk x2\n- Bread\n- Chicken 3 lbs\n- Basmati rice\n- Cumin seeds"}
-                  style={{width:"100%",fontSize:13,padding:10,borderRadius:10,border:"0.5px solid #ccc",resize:"vertical"}}/>
-                <button onClick={()=>{const items=parseEmail(emailText);setScanPreview(items);if(!items.length)setScanError("No items found — make sure items are on separate lines or use dashes.");}}
-                  style={{width:"100%",marginTop:8,padding:10,fontSize:14,fontWeight:600,background:green,color:"#fff",border:"none",borderRadius:10,cursor:"pointer"}}>Extract items</button>
-              </>
-            )}
-
-            {scanError&&<div style={{fontSize:12,color:"#e24b4a",marginTop:8,padding:"8px 10px",background:"#fef2f2",borderRadius:8}}>{scanError}</div>}
-
+            {scanMode==="email"&&(<>
+              <div style={{fontSize:12,color:"#888",marginBottom:6,lineHeight:1.5}}>Paste any email with a grocery list — from family, meal plans, or store orders.</div>
+              <textarea value={emailText} onChange={e=>setEmailText(e.target.value)} rows={7}
+                placeholder={"Hi, here's this week's list:\n- Milk x2\n- Bread\n- Chicken 3 lbs\n- Basmati rice\n- Cumin seeds"}
+                style={{width:"100%",fontSize:13,padding:"10px 12px",borderRadius:10,border:"0.5px solid #ddd",resize:"none",lineHeight:1.6}}/>
+              <button onClick={()=>{const items=parseTextList(emailText);setScanPreview(items);if(!items.length)setScanError("No items found — ensure items are on separate lines or use dashes.");}}
+                style={{width:"100%",marginTop:8,padding:11,fontSize:14,fontWeight:600,background:G,color:"#fff",border:"none",borderRadius:10}}>Extract items</button>
+            </>)}
+            {scanError&&<div style={{fontSize:12,color:"#e24b4a",marginTop:8,padding:"9px 12px",background:"#fef2f2",borderRadius:9}}>{scanError}</div>}
             {scanPreview.length>0&&(
               <div style={{marginTop:12}}>
-                <div style={{fontSize:13,fontWeight:600,marginBottom:6}}>{scanPreview.length} items found</div>
-                <div style={{border:"0.5px solid #e0e0e0",borderRadius:10,overflow:"hidden",maxHeight:200,overflowY:"auto"}}>
+                <div style={{fontSize:13,fontWeight:600,marginBottom:6}}>{scanPreview.length} items — review & confirm</div>
+                <div style={{border:"0.5px solid #eee",borderRadius:10,overflow:"hidden",maxHeight:220,overflowY:"auto"}}>
                   {scanPreview.map((it,i)=>(
-                    <div key={i} style={{display:"flex",alignItems:"center",gap:6,padding:"8px 10px",borderBottom:"0.5px solid #eee"}}>
+                    <div key={i} style={{display:"flex",alignItems:"center",gap:7,padding:"9px 11px",borderBottom:"0.5px solid #f0f0f0"}}>
                       <span style={{flex:1,fontSize:13}}>{it.qty>1?`×${it.qty} `:""}{it.name}</span>
-                      <select value={it.category} onChange={e=>{const n=[...scanPreview];n[i]={...n[i],category:e.target.value};setScanPreview(n);}}
-                        style={{fontSize:11,padding:"2px 4px",borderRadius:6}}>
+                      <select value={it.category} onChange={e=>{const n=[...scanPreview];n[i]={...n[i],category:e.target.value};setScanPreview(n);}} style={{fontSize:11,padding:"2px 4px",borderRadius:6,border:"0.5px solid #ddd"}}>
                         {ALL_CATS.map(c=><option key={c} value={c}>{c}</option>)}
                       </select>
-                      <button onClick={()=>setScanPreview(p=>p.filter((_,j)=>j!==i))} style={{border:"none",background:"none",color:"#e24b4a",fontSize:16,cursor:"pointer",padding:"0 2px"}}>×</button>
+                      <button onClick={()=>setScanPreview(p=>p.filter((_,j)=>j!==i))} style={{border:"none",background:"none",color:"#e24b4a",fontSize:17,padding:"0 2px",lineHeight:1}}>×</button>
                     </div>
                   ))}
                 </div>
-                <button onClick={confirmScan} style={{width:"100%",marginTop:10,padding:11,fontSize:14,fontWeight:600,background:green,color:"#fff",border:"none",borderRadius:10,cursor:"pointer"}}>
-                  Add {scanPreview.length} items to my list
+                <button onClick={confirmScan} style={{width:"100%",marginTop:10,padding:12,fontSize:14,fontWeight:600,background:G,color:"#fff",border:"none",borderRadius:10}}>
+                  ✓ Add {scanPreview.length} items to my list
                 </button>
               </div>
             )}
@@ -336,68 +452,68 @@ function App(){
         </div>
       )}
 
-      <div style={{padding:"0 14px 80px"}}>
+      <div className="scroll" style={{padding:"0 14px 24px"}}>
 
-        {/* LIST TAB */}
+        {/* ── MY LIST ── */}
         {tab==="list"&&(
           <div>
             <div style={{display:"flex",gap:6,padding:"10px 0 8px",flexWrap:"wrap"}}>
-              <input value={newItem} onChange={e=>setNewItem(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addItem()} placeholder="Add item..." style={{flex:2,minWidth:110,fontSize:13}}/>
-              <select value={newCat} onChange={e=>setNewCat(e.target.value)} style={{flex:1,minWidth:85,fontSize:11}}>{ALL_CATS.map(c=><option key={c} value={c}>{c}</option>)}</select>
+              <input value={newItem} onChange={e=>setNewItem(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addItem()} placeholder="Add item…" style={{flex:2,minWidth:100,fontSize:13}}/>
+              <select value={newCat} onChange={e=>setNewCat(e.target.value)} style={{flex:1,minWidth:80,fontSize:11}}>{ALL_CATS.map(c=><option key={c} value={c}>{c}</option>)}</select>
               <div style={{display:"flex",alignItems:"center",gap:4}}>
-                <button onClick={()=>setNewQty(q=>Math.max(1,q-1))} style={{width:26,height:26,padding:0,fontSize:15,borderRadius:6}}>−</button>
-                <span style={{fontSize:13,minWidth:18,textAlign:"center"}}>{newQty}</span>
-                <button onClick={()=>setNewQty(q=>q+1)} style={{width:26,height:26,padding:0,fontSize:15,borderRadius:6}}>+</button>
+                <button onClick={()=>setNewQty(q=>Math.max(1,q-1))} style={{width:28,height:28,padding:0,fontSize:16,borderRadius:7,fontWeight:500}}>−</button>
+                <span style={{fontSize:13,minWidth:18,textAlign:"center",fontWeight:500}}>{newQty}</span>
+                <button onClick={()=>setNewQty(q=>q+1)} style={{width:28,height:28,padding:0,fontSize:16,borderRadius:7,fontWeight:500}}>+</button>
               </div>
-              <button onClick={addItem} style={{fontSize:13,padding:"0 14px",borderRadius:8,background:green,color:"#fff",border:"none"}}>Add</button>
+              <button onClick={addItem} style={{fontSize:13,padding:"0 14px",borderRadius:10,background:G,color:"#fff",border:"none",fontWeight:600}}>Add</button>
             </div>
-            {list.length===0&&<div style={{padding:40,textAlign:"center",color:"#aaa",fontSize:14}}>Your list is empty — tap <strong>+ Scan</strong> or add items above.</div>}
+            {checkedCount>0&&<button onClick={clearChecked} style={{width:"100%",marginBottom:8,padding:"8px",fontSize:12,borderRadius:9,background:"#fef2f2",border:"0.5px solid #fcc",color:"#e24b4a"}}>Remove {checkedCount} checked item{checkedCount>1?"s":""}</button>}
+            {list.length===0&&<div style={{padding:"50px 20px",textAlign:"center"}}><div style={{fontSize:40,marginBottom:12}}>🛒</div><div style={{fontSize:14,color:"#aaa"}}>Your list is empty</div><div style={{fontSize:12,color:"#ccc",marginTop:4}}>Tap + Scan or type above</div></div>}
             {Object.entries(catGroups).map(([cat,items])=>(
-              <div key={cat} style={{marginBottom:12}}>
-                <div style={{fontSize:10,fontWeight:600,color:"#888",marginBottom:5,letterSpacing:.8,textTransform:"uppercase",display:"flex",alignItems:"center",gap:6}}>
-                  <span style={{width:8,height:8,borderRadius:"50%",background:CAT_COLORS[cat]?.bg||"#ccc",display:"inline-block",border:`1px solid ${CAT_COLORS[cat]?.text||"#aaa"}`}}></span>{cat}
+              <div key={cat} style={{marginBottom:14}}>
+                <div style={{fontSize:10,fontWeight:600,color:"#aaa",marginBottom:5,letterSpacing:.8,textTransform:"uppercase",display:"flex",alignItems:"center",gap:6}}>
+                  <span style={{width:8,height:8,borderRadius:"50%",background:CAT_COLORS[cat]?.bg,border:`1.5px solid ${CAT_COLORS[cat]?.text}`,display:"inline-block"}}/>
+                  {cat} <span style={{fontWeight:400,color:"#ccc"}}>({items.length})</span>
                 </div>
                 {items.map(item=>{
                   const freq=freqMap[item.name.toLowerCase()]||0;
                   return(
-                    <div key={item.id} style={{display:"flex",alignItems:"center",gap:7,padding:"9px 10px",marginBottom:4,background:"#fff",border:"0.5px solid #e8e8e8",borderRadius:10,opacity:checked[item.id]?.5:1}}>
-                      <div onClick={()=>toggleCheck(item.id)} style={{width:18,height:18,border:"1.5px solid #ccc",borderRadius:4,background:checked[item.id]?green:"transparent",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}>
-                        {checked[item.id]&&<svg width="10" height="10" viewBox="0 0 10 10"><polyline points="1.5,5 4,7.5 8.5,2.5" stroke="white" strokeWidth="2" fill="none"/></svg>}
+                    <div key={item.id} style={{display:"flex",alignItems:"center",gap:7,padding:"10px 11px",marginBottom:5,background:"#fff",border:"0.5px solid #eee",borderRadius:11,opacity:checked[item.id]?.45:1}}>
+                      <div onClick={()=>toggleCheck(item.id)} style={{width:20,height:20,border:"1.5px solid #ddd",borderRadius:5,background:checked[item.id]?G:"transparent",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}>
+                        {checked[item.id]&&<svg width="11" height="11" viewBox="0 0 10 10"><polyline points="1.5,5 4,7.5 8.5,2.5" stroke="white" strokeWidth="2" fill="none"/></svg>}
                       </div>
-                      <span style={{flex:1,fontSize:13,textDecoration:checked[item.id]?"line-through":"none"}}>
+                      <span style={{flex:1,fontSize:13,textDecoration:checked[item.id]?"line-through":"none",color:checked[item.id]?"#bbb":"#111"}}>
                         {item.name}
-                        {freq>=2&&<span style={{fontSize:10,padding:"1px 6px",borderRadius:10,background:"#faeeda",color:"#633806",marginLeft:5}}>{freq}x/mo</span>}
+                        {freq>=2&&<span style={{fontSize:10,padding:"1px 6px",borderRadius:10,background:"#faeeda",color:"#633806",marginLeft:5,fontWeight:500}}>{freq}x</span>}
                       </span>
-                      <select value={item.category} onChange={e=>updateItemCat(item.id,e.target.value)} style={{fontSize:10,padding:"2px 3px",border:"none",background:"transparent",color:"#aaa",cursor:"pointer"}}>{ALL_CATS.map(c=><option key={c} value={c}>{c}</option>)}</select>
+                      <select value={item.category} onChange={e=>updateItemCat(item.id,e.target.value)} style={{fontSize:10,padding:"2px",border:"none",background:"transparent",color:"#ccc"}}>{ALL_CATS.map(c=><option key={c} value={c}>{c}</option>)}</select>
                       <div style={{display:"flex",alignItems:"center",gap:3}}>
-                        <button onClick={()=>updateQty(item.id,-1)} style={{width:22,height:22,padding:0,fontSize:13,borderRadius:5}}>−</button>
-                        <span style={{fontSize:13,minWidth:16,textAlign:"center"}}>{item.qty}</span>
-                        <button onClick={()=>updateQty(item.id,1)} style={{width:22,height:22,padding:0,fontSize:13,borderRadius:5}}>+</button>
+                        <button onClick={()=>updateQty(item.id,-1)} style={{width:24,height:24,padding:0,fontSize:14,borderRadius:6,fontWeight:500}}>−</button>
+                        <span style={{fontSize:13,minWidth:18,textAlign:"center",fontWeight:500}}>{item.qty}</span>
+                        <button onClick={()=>updateQty(item.id,1)} style={{width:24,height:24,padding:0,fontSize:14,borderRadius:6,fontWeight:500}}>+</button>
                       </div>
-                      <button onClick={()=>removeItem(item.id)} style={{border:"none",background:"none",color:"#ccc",fontSize:18,cursor:"pointer",padding:"0 2px",lineHeight:1}}>×</button>
+                      <button onClick={()=>removeItem(item.id)} style={{border:"none",background:"none",color:"#ddd",fontSize:19,padding:"0 2px",lineHeight:1}}>×</button>
                     </div>
                   );
                 })}
               </div>
             ))}
-            {list.length>0&&(
-              <div style={{marginTop:8,padding:14,background:"#f0faf6",borderRadius:12,textAlign:"center",border:`1px solid ${green}30`}}>
-                <div style={{fontSize:11,color:"#888"}}>best estimated total</div>
-                <div style={{fontSize:28,fontWeight:700,color:green}}>${minTotal.toFixed(2)}</div>
-                <div style={{fontSize:12,color:"#666"}}>{storeTotals[0]?.store.flag} {storeTotals[0]?.store.name}</div>
-              </div>
-            )}
+            {list.length>0&&<div style={{marginTop:4,padding:"14px 16px",background:"#f0faf6",borderRadius:14,textAlign:"center",border:`1px solid ${G}25`}}>
+              <div style={{fontSize:11,color:"#aaa"}}>best estimated total</div>
+              <div style={{fontSize:30,fontWeight:800,color:G}}>${minTotal.toFixed(2)}</div>
+              <div style={{fontSize:12,color:"#666"}}>{storeTotals[0]?.store.flag} {storeTotals[0]?.store.name}</div>
+            </div>}
           </div>
         )}
 
-        {/* COMPARE TAB */}
+        {/* ── COMPARE ── */}
         {tab==="compare"&&(
           <div style={{paddingTop:10}}>
-            <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:12}}>
-              {[["items",list.length,"#f5f5f3","#555"],["stores",activeIds.length,"#f5f5f3","#555"],["max save","$"+(storeTotals.length>1?(storeTotals[storeTotals.length-1].total-minTotal).toFixed(0):"0"),"#e8f7f2",green]].map(([l,v,bg,col])=>(
-                <div key={l} style={{padding:10,background:bg,borderRadius:10,textAlign:"center"}}>
-                  <div style={{fontSize:10,color:"#888"}}>{l}</div>
-                  <div style={{fontSize:20,fontWeight:700,color:col}}>{v}</div>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:14}}>
+              {[["items",list.length,"#f5f5f3","#555"],["stores",activeIds.length,"#f5f5f3","#555"],["max save","$"+(storeTotals.length>1?(storeTotals[storeTotals.length-1].total-minTotal).toFixed(0):"0"),"#e8f7f2",G]].map(([l,v,bg,col])=>(
+                <div key={l} style={{padding:"10px 8px",background:bg,borderRadius:10,textAlign:"center"}}>
+                  <div style={{fontSize:10,color:"#aaa",marginBottom:2}}>{l}</div>
+                  <div style={{fontSize:22,fontWeight:700,color:col}}>{v}</div>
                 </div>
               ))}
             </div>
@@ -405,22 +521,23 @@ function App(){
               const tc=TYPE_META[s.store.type]?.color||"#888";
               const pct=minTotal>0?((s.total-minTotal)/minTotal*100):0;
               return(
-                <div key={s.id} style={{...card,border:i===0?`2px solid ${tc}`:"0.5px solid #e0e0e0"}}>
-                  {i===0&&<div style={{fontSize:10,padding:"3px 8px",borderRadius:10,display:"inline-block",marginBottom:6,background:tc+"20",color:tc,fontWeight:600}}>Best price</div>}
+                <div key={s.id} style={{padding:"13px 14px",marginBottom:9,background:"#fff",border:i===0?`2px solid ${tc}`:"0.5px solid #eee",borderRadius:14}}>
+                  {i===0&&<div style={{fontSize:10,padding:"3px 9px",borderRadius:10,display:"inline-block",marginBottom:6,background:tc+"18",color:tc,fontWeight:600}}>Best price</div>}
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
                     <div>
-                      <div style={{display:"flex",alignItems:"center",gap:6}}><span style={{fontSize:16}}>{s.store.flag}</span><span style={{fontWeight:600,fontSize:14}}>{s.store.name}</span></div>
-                      {s.store.address&&<div style={{fontSize:11,color:"#888",marginTop:1}}>{s.store.address}</div>}
-                      <div style={{fontSize:11,color:"#888"}}>{TYPE_META[s.store.type]?.label} · {TIER_LABELS[s.store.tier]}</div>
+                      <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:2}}><span style={{fontSize:17}}>{s.store.flag}</span><span style={{fontWeight:600,fontSize:14}}>{s.store.name}</span></div>
+                      {s.store.address&&<div style={{fontSize:11,color:"#aaa"}}>{s.store.address}</div>}
+                      <div style={{fontSize:11,color:"#bbb"}}>{TYPE_META[s.store.type]?.label} · {TIER_LABELS[s.store.tier]}</div>
                     </div>
                     <div style={{textAlign:"right"}}>
-                      <div style={{fontSize:22,fontWeight:700,color:i===0?tc:"#111"}}>${s.total.toFixed(2)}</div>
-                      {pct>0&&<div style={{fontSize:10,color:"#aaa"}}>+{pct.toFixed(0)}% vs cheapest</div>}
+                      <div style={{fontSize:22,fontWeight:800,color:i===0?tc:"#111"}}>${s.total.toFixed(2)}</div>
+                      {pct>0&&<div style={{fontSize:10,color:"#bbb"}}>+{pct.toFixed(0)}% vs cheapest</div>}
+                      {pct===0&&<div style={{fontSize:10,color:G,fontWeight:500}}>lowest price ✓</div>}
                     </div>
                   </div>
-                  <div style={{marginTop:8,height:5,borderRadius:3,background:"#eee",overflow:"hidden"}}><div style={{height:"100%",borderRadius:3,background:tc,width:`${Math.max(8,100-pct*0.7)}%`}}/></div>
+                  <div style={{marginTop:9,height:5,borderRadius:3,background:"#f0f0f0",overflow:"hidden"}}><div style={{height:"100%",borderRadius:3,background:tc,width:`${Math.max(6,100-pct*0.7)}%`,transition:"width .5s"}}/></div>
                   <div style={{marginTop:8,display:"flex",gap:5,flexWrap:"wrap"}}>
-                    {s.store.strengths.map(cat=><span key={cat} style={{fontSize:10,padding:"2px 7px",borderRadius:10,background:CAT_COLORS[cat]?.bg||"#eee",color:CAT_COLORS[cat]?.text||"#333"}}>{cat}</span>)}
+                    {s.store.strengths.map(cat=><span key={cat} style={{fontSize:10,padding:"2px 8px",borderRadius:10,background:CAT_COLORS[cat]?.bg||"#eee",color:CAT_COLORS[cat]?.text||"#333"}}>{cat}</span>)}
                   </div>
                 </div>
               );
@@ -428,10 +545,10 @@ function App(){
           </div>
         )}
 
-        {/* SPLIT TAB */}
+        {/* ── SPLIT ── */}
         {tab==="split"&&(
           <div style={{paddingTop:10}}>
-            <div style={{padding:"9px 12px",background:"#e8f4fd",borderRadius:10,marginBottom:12,fontSize:12,color:"#185fa5"}}>Items routed to whichever preferred store prices each category lowest.</div>
+            <div style={{padding:"10px 13px",background:"#e8f4fd",borderRadius:11,marginBottom:13,fontSize:12,color:"#185fa5",lineHeight:1.5}}>Items routed to the preferred store with the lowest price in each category.</div>
             {(()=>{
               const catBest={};
               Object.keys(BASE_PRICES).forEach(cat=>{let best=null,bm=Infinity;activeIds.forEach(id=>{const m=allStores[id].mult[cat]||1;if(m<bm){bm=m;best=id;}});if(best)catBest[cat]=best;});
@@ -445,25 +562,25 @@ function App(){
                   const sub=items.reduce((s,it)=>s+(BASE_PRICES[it.category]||3.5)*(store.mult[it.category]||1)*it.qty,0);
                   const tc=TYPE_META[store.type]?.color||"#888";
                   return(
-                    <div key={id} style={{marginBottom:10,border:"0.5px solid #e0e0e0",borderRadius:12,overflow:"hidden"}}>
-                      <div style={{padding:"9px 14px",background:tc+"15",borderBottom:"0.5px solid #eee",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                        <div><div style={{fontWeight:600,fontSize:13,color:tc}}>{store.flag} {store.name}</div><div style={{fontSize:10,color:"#888"}}>{[...new Set(items.map(i=>i.category))].join(", ")}</div></div>
-                        <div style={{fontSize:14,fontWeight:700}}>${sub.toFixed(2)}</div>
+                    <div key={id} style={{marginBottom:10,border:"0.5px solid #eee",borderRadius:13,overflow:"hidden"}}>
+                      <div style={{padding:"10px 14px",background:tc+"12",borderBottom:"0.5px solid #eee",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                        <div><div style={{fontWeight:600,fontSize:13,color:tc}}>{store.flag} {store.name}</div><div style={{fontSize:10,color:"#bbb"}}>{[...new Set(items.map(i=>i.category))].join(", ")}</div></div>
+                        <div style={{fontSize:15,fontWeight:700}}>${sub.toFixed(2)}</div>
                       </div>
                       {items.map(it=>(
-                        <div key={it.id} style={{padding:"6px 14px",fontSize:12,borderBottom:"0.5px solid #eee",display:"flex",justifyContent:"space-between"}}>
+                        <div key={it.id} style={{padding:"7px 14px",fontSize:12,borderBottom:"0.5px solid #f8f8f8",display:"flex",justifyContent:"space-between"}}>
                           <span>{it.name}{it.qty>1?` ×${it.qty}`:""}</span>
-                          <span style={{color:"#888"}}>${((BASE_PRICES[it.category]||3.5)*(store.mult[it.category]||1)*it.qty).toFixed(2)}</span>
+                          <span style={{color:"#bbb"}}>${((BASE_PRICES[it.category]||3.5)*(store.mult[it.category]||1)*it.qty).toFixed(2)}</span>
                         </div>
                       ))}
                     </div>
                   );
                 })}
-                <div style={{padding:"12px 14px",background:"#f5f5f3",borderRadius:10,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                <div style={{padding:"13px 14px",background:"#f5f5f3",borderRadius:12,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                   <span style={{fontSize:13,fontWeight:600}}>Optimized total</span>
                   <div style={{textAlign:"right"}}>
-                    <div style={{fontSize:16,fontWeight:700}}>${grand.toFixed(2)}</div>
-                    <div style={{fontSize:11,color:green}}>save ${(storeTotals[storeTotals.length-1]?.total-grand||0).toFixed(2)} vs worst option</div>
+                    <div style={{fontSize:17,fontWeight:800}}>${grand.toFixed(2)}</div>
+                    <div style={{fontSize:11,color:G,fontWeight:500}}>save ${(storeTotals[storeTotals.length-1]?.total-grand||0).toFixed(2)} vs priciest</div>
                   </div>
                 </div>
               </>);
@@ -471,42 +588,42 @@ function App(){
           </div>
         )}
 
-        {/* HISTORY TAB */}
+        {/* ── HISTORY ── */}
         {tab==="history"&&(
           <div style={{paddingTop:10}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
               <div style={{fontSize:13,fontWeight:600}}>Shopping history</div>
               <div style={{display:"flex",gap:6}}>
-                {histEdit&&Object.values(selHist).some(Boolean)&&<button onClick={deleteSelHist} style={{fontSize:11,padding:"4px 10px",borderRadius:16,background:"#fef2f2",border:"none",color:"#e24b4a",cursor:"pointer"}}>Delete selected</button>}
-                <button onClick={()=>{setHistEdit(h=>!h);setSelHist({});}} style={{fontSize:11,padding:"4px 10px",borderRadius:16}}>{histEdit?"Done":"Edit"}</button>
+                {histEdit&&Object.values(selHist).some(Boolean)&&<button onClick={deleteSelHistItems} style={{fontSize:11,padding:"5px 11px",borderRadius:16,background:"#fef2f2",border:"none",color:"#e24b4a"}}>Delete selected</button>}
+                <button onClick={()=>{setHistEdit(h=>!h);setSelHist({});}} style={{fontSize:11,padding:"5px 11px",borderRadius:16}}>{histEdit?"Done":"Edit"}</button>
               </div>
             </div>
-            <div style={{padding:"10px 12px",background:"#f9f9f7",borderRadius:10,marginBottom:12}}>
-              <div style={{fontSize:11,fontWeight:600,marginBottom:6,color:"#888"}}>Most frequent</div>
+            <div style={{padding:"10px 13px",background:"#fafafa",borderRadius:11,marginBottom:13}}>
+              <div style={{fontSize:11,fontWeight:600,marginBottom:7,color:"#aaa"}}>Most frequent items</div>
               <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
-                {Object.entries(freqMap).sort((a,b)=>b[1]-a[1]).slice(0,8).map(([name,count])=>(
-                  <span key={name} style={{fontSize:11,padding:"3px 8px",borderRadius:12,background:"#faeeda",color:"#633806"}}>{name} <span style={{opacity:.6}}>·{count}x</span></span>
+                {Object.entries(freqMap).sort((a,b)=>b[1]-a[1]).slice(0,10).map(([name,count])=>(
+                  <span key={name} style={{fontSize:11,padding:"3px 9px",borderRadius:12,background:"#faeeda",color:"#633806"}}>{name}<span style={{opacity:.6}}> ·{count}x</span></span>
                 ))}
               </div>
             </div>
-            {Object.keys(history).length===0&&<div style={{padding:30,textAlign:"center",color:"#aaa",fontSize:13}}>No history yet — scan a list to get started.</div>}
-            {Object.entries(history).map(([week,items])=>(
-              <div key={week} style={{marginBottom:8,border:"0.5px solid #e0e0e0",borderRadius:10,overflow:"hidden"}}>
-                <div style={{padding:"9px 12px",background:"#f9f9f7",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                  <div><div style={{fontSize:13,fontWeight:600}}>{week}</div><div style={{fontSize:11,color:"#888"}}>{items.length} items</div></div>
+            {history.length===0&&<div style={{padding:40,textAlign:"center",color:"#ccc",fontSize:13}}>No history yet — scan a list to get started.</div>}
+            {history.map(h=>(
+              <div key={h.id} style={{marginBottom:9,border:"0.5px solid #eee",borderRadius:12,overflow:"hidden"}}>
+                <div style={{padding:"10px 13px",background:"#fafafa",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                  <div><div style={{fontSize:13,fontWeight:600}}>{h.week}</div><div style={{fontSize:11,color:"#bbb"}}>{h.items.length} items</div></div>
                   <div style={{display:"flex",gap:6}}>
-                    <button onClick={()=>addWeekToList(week)} style={{fontSize:11,padding:"4px 9px",borderRadius:14,background:"#e8f7f2",border:"none",color:green,cursor:"pointer"}}>+ Add to list</button>
-                    {histEdit&&<button onClick={()=>setHistory(h=>{const n={...h};delete n[week];return n;})} style={{fontSize:11,padding:"4px 9px",borderRadius:14,background:"#fef2f2",border:"none",color:"#e24b4a",cursor:"pointer"}}>Delete</button>}
+                    <button onClick={()=>addWeekToList(h.id)} style={{fontSize:11,padding:"4px 10px",borderRadius:14,background:"#e8f7f2",border:"none",color:G,fontWeight:500}}>+ Add to list</button>
+                    {histEdit&&<button onClick={()=>deleteHistWeek(h.id)} style={{fontSize:11,padding:"4px 10px",borderRadius:14,background:"#fef2f2",border:"none",color:"#e24b4a"}}>Delete</button>}
                   </div>
                 </div>
-                {items.map((it,i)=>(
-                  <div key={i} onClick={()=>histEdit&&setSelHist(s=>({...s,[`${week}::${i}`]:!s[`${week}::${i}`]}))}
-                    style={{padding:"6px 12px",fontSize:12,borderTop:"0.5px solid #eee",display:"flex",alignItems:"center",gap:8,cursor:histEdit?"pointer":"default",background:selHist[`${week}::${i}`]?"#fef2f2":"transparent"}}>
-                    {histEdit&&<div style={{width:14,height:14,border:"1.5px solid #ccc",borderRadius:3,flexShrink:0,background:selHist[`${week}::${i}`]?"#e24b4a":"transparent",display:"flex",alignItems:"center",justifyContent:"center"}}>
-                      {selHist[`${week}::${i}`]&&<svg width="8" height="8" viewBox="0 0 10 10"><polyline points="1.5,5 4,7.5 8.5,2.5" stroke="white" strokeWidth="2.2" fill="none"/></svg>}
+                {h.items.map((it,i)=>(
+                  <div key={i} onClick={()=>histEdit&&setSelHist(s=>({...s,[`${h.id}::${i}`]:!s[`${h.id}::${i}`]}))}
+                    style={{padding:"7px 13px",fontSize:12,borderTop:"0.5px solid #f5f5f5",display:"flex",alignItems:"center",gap:8,cursor:histEdit?"pointer":"default",background:selHist[`${h.id}::${i}`]?"#fef2f2":"transparent"}}>
+                    {histEdit&&<div style={{width:15,height:15,border:"1.5px solid #ddd",borderRadius:3,flexShrink:0,background:selHist[`${h.id}::${i}`]?"#e24b4a":"transparent",display:"flex",alignItems:"center",justifyContent:"center"}}>
+                      {selHist[`${h.id}::${i}`]&&<svg width="8" height="8" viewBox="0 0 10 10"><polyline points="1.5,5 4,7.5 8.5,2.5" stroke="white" strokeWidth="2.2" fill="none"/></svg>}
                     </div>}
                     <span style={{flex:1}}>{it.name}{it.qty>1?` ×${it.qty}`:""}</span>
-                    <span style={{fontSize:10,padding:"1px 7px",borderRadius:10,background:CAT_COLORS[it.category]?.bg||"#eee",color:CAT_COLORS[it.category]?.text||"#333"}}>{it.category}</span>
+                    <span style={{fontSize:10,padding:"1px 8px",borderRadius:10,background:CAT_COLORS[it.category]?.bg||"#eee",color:CAT_COLORS[it.category]?.text||"#333"}}>{it.category}</span>
                   </div>
                 ))}
               </div>
@@ -514,56 +631,153 @@ function App(){
           </div>
         )}
 
-        {/* SETTINGS TAB */}
+        {/* ── HELP ── */}
+        {tab==="help"&&(
+          <div style={{paddingTop:12}}>
+            <div style={{padding:"14px",background:"#f0faf6",borderRadius:14,marginBottom:14,border:`1px solid ${G}25`}}>
+              <div style={{fontSize:13,fontWeight:700,color:G,marginBottom:10}}>🚀 Quick start</div>
+              {[["1","Tap + Scan","Add items by typing, photo, or pasting an email"],["2","Pick your stores","Go to Settings and toggle the stores near you"],["3","Check Compare","See which store is cheapest for your exact list"],["4","Use Split & Save","Route each category to its cheapest store"],["5","Shop & check off","Tick items as you drop them in the cart"]].map(([n,t,d])=>(
+                <div key={n} style={{display:"flex",gap:10,marginBottom:10,alignItems:"flex-start"}}>
+                  <div style={{width:24,height:24,borderRadius:"50%",background:G,color:"#fff",fontSize:12,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{n}</div>
+                  <div><div style={{fontSize:13,fontWeight:600,color:"#111"}}>{t}</div><div style={{fontSize:12,color:"#888",marginTop:1}}>{d}</div></div>
+                </div>
+              ))}
+            </div>
+
+            <div style={{fontSize:13,fontWeight:700,color:"#333",marginBottom:8}}>📋 What each tab does</div>
+            {[["🛒","My List","Your active shopping list. Add items manually or via Scan. Check off as you shop and remove all checked at once."],["🏪","Compare","Ranks all your preferred stores cheapest to most expensive for your exact current list."],["✂️","Split & Save","Assigns each item category to the store that prices it lowest. Shows optimized total and savings."],["📅","History","All past lists. Re-add any week with one tap. Use Edit to delete individual items or full weeks."],["❓","Help","Tips, guides, FAQ, and contact."],["⚙️","Settings","Location, radius, stores, API key, and on-device storage management."]].map(([icon,name,desc])=>(
+              <div key={name} style={{display:"flex",gap:10,padding:"11px 13px",marginBottom:7,background:"#fff",border:"0.5px solid #eee",borderRadius:11,alignItems:"flex-start"}}>
+                <span style={{fontSize:18,flexShrink:0}}>{icon}</span>
+                <div><div style={{fontSize:13,fontWeight:600,color:"#111",marginBottom:2}}>{name}</div><div style={{fontSize:12,color:"#888",lineHeight:1.5}}>{desc}</div></div>
+              </div>
+            ))}
+
+            <div style={{fontSize:13,fontWeight:700,color:"#333",marginTop:16,marginBottom:8}}>📷 How scanning works</div>
+            {[["✏️ Type / Paste","Paste any format — one item per line, comma-separated, or with quantities like 2x Eggs. Auto-detects quantities and guesses the category.","#faeeda","#633806"],["📷 Photo / Camera","Photograph a handwritten list, receipt, or fridge note. Requires an Anthropic API key (free). Claude AI reads the image and extracts all items.","#e8f4fd","#185fa5"],["📧 From Email","Paste the body of any email — a list from family, a meal plan, or an order confirmation. The app strips bullet-pointed items automatically.","#e8f7f2",G]].map(([t,d,bg,col])=>(
+              <div key={t} style={{padding:"11px 13px",marginBottom:7,background:bg,borderRadius:11,border:`0.5px solid ${col}25`}}>
+                <div style={{fontSize:13,fontWeight:600,color:col,marginBottom:3}}>{t}</div>
+                <div style={{fontSize:12,color:"#666",lineHeight:1.5}}>{d}</div>
+              </div>
+            ))}
+
+            <div style={{fontSize:13,fontWeight:700,color:"#333",marginTop:16,marginBottom:8}}>🏪 Store tips — Hanover, MD</div>
+            {[["🇮🇳","Patel Brothers / Tara Vani","Best for spices, basmati rice, lentils, flours — often 40–50% cheaper than mainstream stores."],["🇰🇷","Lotte Plaza / H Mart","Best for Asian produce, frozen dumplings, seafood, Korean snacks, and rice."],["🏪","Costco","Best bulk prices on meat, rice, pantry, and household. Needs membership (~$65/yr)."],["🏪","Sam's Club","Walmart's warehouse club. Great bulk deals on beverages and household. Needs membership (~$50/yr)."],["🛒","ALDI","Best single stop for produce and dairy. Closed Sundays — bring a quarter for the cart."],["🛒","Walmart","Best for pantry staples, beverages, and household in bulk."],["🛒","Food Lion","Best meat department among mid-range stores. Use the loyalty card."],["🛒","Safeway","Use the Safeway app for digital coupons before shopping."]].map(([flag,name,tip])=>(
+              <div key={name} style={{display:"flex",gap:9,padding:"9px 12px",marginBottom:6,background:"#fff",border:"0.5px solid #eee",borderRadius:10,alignItems:"flex-start"}}>
+                <span style={{fontSize:18,flexShrink:0}}>{flag}</span>
+                <div><div style={{fontSize:12,fontWeight:600,color:"#111",marginBottom:1}}>{name}</div><div style={{fontSize:11,color:"#888",lineHeight:1.5}}>{tip}</div></div>
+              </div>
+            ))}
+
+            <div style={{padding:"11px 13px",background:"#f9f9f7",borderRadius:11,marginTop:16,marginBottom:14,border:"0.5px solid #eee"}}>
+              <div style={{fontSize:13,fontWeight:600,color:"#333",marginBottom:4}}>💾 Your data is private</div>
+              <div style={{fontSize:12,color:"#888",lineHeight:1.6}}>All lists, history, settings, and stores are saved <strong>only on this device</strong> in IndexedDB. Nothing is uploaded to any server. Go to <strong>Settings → Request persistent storage</strong> to protect your data from being auto-cleared.</div>
+            </div>
+
+            <div style={{fontSize:13,fontWeight:700,color:"#333",marginBottom:8}}>❓ FAQ</div>
+            {[["Does the app work without internet?","Yes — fully. After first load everything works offline. Only photo scanning needs internet to call the AI."],["Where do I get an Anthropic API key?","Go to console.anthropic.com, create a free account, click API Keys, and create a new key. New accounts get free credits."],["Can I add my local Indian / Korean store?","Yes! Settings → Add a store not in the list. Enter the name, address, and best categories (e.g. spices, rice/grains). Saved instantly."],["How do I install it on my iPhone?","Open the app in Safari → tap Share → Add to Home Screen → Add. Launches fullscreen like a native app."],["What's the difference between Costco and Sam's Club?","Costco is slightly better for meat, produce, and rice. Sam's Club edges it on beverages and household. Both need memberships. Sam's Club (~$50/yr) is cheaper than Costco (~$65/yr)."],["How do I delete my data?","Settings → scroll to Danger Zone → Clear all app data. Wipes everything. Cannot be undone."]].map(([q,a])=>(
+              <details key={q} style={{marginBottom:7,border:"0.5px solid #eee",borderRadius:10,overflow:"hidden"}}>
+                <summary style={{padding:"11px 13px",fontSize:13,fontWeight:500,cursor:"pointer",background:"#fafafa",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                  <span>{q}</span><span style={{color:"#bbb",fontSize:16,flexShrink:0,marginLeft:8}}>›</span>
+                </summary>
+                <div style={{padding:"10px 13px",fontSize:12,color:"#666",lineHeight:1.6,borderTop:"0.5px solid #f0f0f0"}}>{a}</div>
+              </details>
+            ))}
+
+            <div style={{marginTop:20,padding:"16px 14px",background:"#f0faf6",borderRadius:14,border:`1px solid ${G}25`,textAlign:"center"}}>
+              <div style={{fontSize:22,marginBottom:6}}>👋</div>
+              <div style={{fontSize:14,fontWeight:700,color:"#111",marginBottom:4}}>Have a question or suggestion?</div>
+              <div style={{fontSize:12,color:"#888",marginBottom:14,lineHeight:1.5}}>Found a bug? Want a new feature? Want to add a store?<br/>Reach out anytime — I'd love to hear from you.</div>
+              <a href="mailto:roopeshaithal@gmail.com?subject=Smart Grocery App" style={{display:"inline-block",padding:"11px 24px",background:G,color:"#fff",borderRadius:20,fontSize:13,fontWeight:600,textDecoration:"none"}}>
+                ✉️ roopeshaithal@gmail.com
+              </a>
+              <div style={{marginTop:14,fontSize:11,color:"#bbb"}}>Built with ❤️ using React + Claude AI<br/>Version 4.1 · Hanover, MD</div>
+            </div>
+          </div>
+        )}
+
+        {/* ── SETTINGS ── */}
         {tab==="settings"&&(
           <div style={{paddingTop:12}}>
+            <div style={{padding:"12px 14px",background:"#f9f9f7",borderRadius:12,marginBottom:18,border:"0.5px solid #eee"}}>
+              <div style={{fontSize:12,fontWeight:600,color:"#555",marginBottom:8}}>💾 On-device storage</div>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:8}}>
+                {[["Used",`${storageInfo.usage} KB`,"#333"],["Quota",`${storageInfo.quota} MB`,"#333"],["Used %",`${storageInfo.pct}%`,storageInfo.pct>80?"#e24b4a":G]].map(([l,v,c])=>(
+                  <div key={l} style={{textAlign:"center",padding:"8px 4px",background:"#fff",borderRadius:8,border:"0.5px solid #eee"}}>
+                    <div style={{fontSize:10,color:"#aaa"}}>{l}</div>
+                    <div style={{fontSize:15,fontWeight:700,color:c}}>{v}</div>
+                  </div>
+                ))}
+              </div>
+              <div style={{fontSize:11,color:"#aaa",lineHeight:1.5,marginBottom:8}}>Stored in <strong>IndexedDB</strong> on your device. No server. 100% private.</div>
+              <div style={{height:6,background:"#eee",borderRadius:3,overflow:"hidden",marginBottom:8}}>
+                <div style={{height:"100%",background:storageInfo.pct>80?"#e24b4a":G,borderRadius:3,width:`${Math.min(100,storageInfo.pct)}%`}}/>
+              </div>
+              <button onClick={async()=>{await navigator.storage?.persist?.();alert("Storage marked as persistent — data protected from auto-clear.");}} style={{width:"100%",fontSize:12,padding:"7px",borderRadius:8,background:"#e8f7f2",border:`0.5px solid ${G}30`,color:G}}>Request persistent storage</button>
+            </div>
+
             <div style={{fontSize:12,fontWeight:600,color:"#888",marginBottom:6}}>Location</div>
-            <div style={{display:"flex",gap:8,marginBottom:6}}>
-              <input value={locationInput} onChange={e=>setLocationInput(e.target.value)} placeholder="City, zip or address" style={{flex:1,fontSize:13}}/>
-              <button onClick={()=>{if(!navigator.geolocation)return;navigator.geolocation.getCurrentPosition(p=>setLocationInput(`${p.coords.latitude.toFixed(3)}, ${p.coords.longitude.toFixed(3)}`));}} style={{fontSize:11,padding:"0 11px"}}>GPS</button>
+            <div style={{display:"flex",gap:8,marginBottom:8}}>
+              <input value={locationInput} onChange={e=>handleLocation(e.target.value)} placeholder="City, zip or address" style={{flex:1,fontSize:13}}/>
+              <button onClick={()=>{if(!navigator.geolocation)return;navigator.geolocation.getCurrentPosition(p=>handleLocation(`${p.coords.latitude.toFixed(3)}, ${p.coords.longitude.toFixed(3)}`));}} style={{fontSize:11,padding:"0 12px",whiteSpace:"nowrap"}}>📍 GPS</button>
             </div>
             <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:20}}>
               <span style={{fontSize:12,color:"#888"}}>Radius</span>
-              <input type="range" min="2" max="25" step="1" value={radius} onChange={e=>setRadius(+e.target.value)} style={{flex:1}}/>
-              <span style={{fontSize:13,fontWeight:600,minWidth:38}}>{radius} mi</span>
+              <input type="range" min="2" max="25" step="1" value={radius} onChange={e=>handleRadius(+e.target.value)} style={{flex:1}}/>
+              <span style={{fontSize:13,fontWeight:600,minWidth:40}}>{radius} mi</span>
             </div>
 
-            <div style={{fontSize:12,fontWeight:600,color:"#888",marginBottom:6}}>Anthropic API key <span style={{fontWeight:400,color:"#aaa"}}>(for image scanning)</span></div>
-            <div style={{display:"flex",gap:8,marginBottom:4}}>
-              <input type={showApiKey?"text":"password"} value={apiKey} onChange={e=>setApiKey(e.target.value)} placeholder="sk-ant-..." style={{flex:1,fontSize:13}}/>
+            <div style={{fontSize:12,fontWeight:600,color:"#888",marginBottom:4}}>Anthropic API key <span style={{fontWeight:400,color:"#bbb"}}>(for photo scanning)</span></div>
+            <div style={{display:"flex",gap:7,marginBottom:4}}>
+              <input type={showApiKey?"text":"password"} value={apiKey} onChange={e=>setApiKey(e.target.value)} placeholder="sk-ant-…" style={{flex:1,fontSize:13}}/>
               <button onClick={()=>setShowApiKey(s=>!s)} style={{fontSize:11,padding:"0 10px"}}>{showApiKey?"Hide":"Show"}</button>
-              <button onClick={()=>saveApiKey(apiKey)} style={{fontSize:11,padding:"0 10px",background:"#e8f7f2",border:`1px solid ${green}30`,color:green}}>Save</button>
+              <button onClick={()=>handleApiKey(apiKey)} style={{fontSize:11,padding:"0 11px",background:"#e8f7f2",border:`0.5px solid ${G}30`,color:G}}>Save</button>
             </div>
-            <div style={{fontSize:11,color:"#aaa",marginBottom:20}}>Key is saved locally on your device only. Get one at console.anthropic.com</div>
+            <div style={{fontSize:11,color:"#bbb",marginBottom:20,lineHeight:1.5}}>Saved in IndexedDB on this device only. Get a key at <strong>console.anthropic.com</strong></div>
 
             <div style={{fontSize:12,fontWeight:600,color:"#888",marginBottom:8}}>Preferred stores</div>
-            <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:10}}>
-              {Object.entries(allStores).map(([id,s])=>{
-                const on=preferredStores.includes(id);
-                const tc=TYPE_META[s.type]?.color||"#888";
-                return(
-                  <button key={id} onClick={()=>setPreferredStores(ps=>ps.includes(id)?ps.filter(x=>x!==id):[...ps,id])} style={{display:"flex",alignItems:"center",gap:4,fontSize:12,padding:"5px 10px",borderRadius:20,background:on?tc+"15":"#f5f5f3",border:on?`1.5px solid ${tc}`:"0.5px solid #ddd",color:on?tc:"#555",cursor:"pointer"}}>
-                    <span style={{fontSize:13}}>{s.flag}</span>{s.name}{on&&<span style={{fontSize:10}}>✓</span>}
-                  </button>
-                );
-              })}
-            </div>
+            {Object.entries({mainstream:"Mainstream",warehouse:"Warehouse 🏪",indian:"Indian 🇮🇳",korean:"Korean 🇰🇷",asian:"Asian 🌏",custom:"Custom 📍"}).map(([type,label])=>{
+              const storesOfType=Object.entries(allStores).filter(([,s])=>s.type===type);
+              if(!storesOfType.length)return null;
+              return(
+                <div key={type} style={{marginBottom:12}}>
+                  <div style={{fontSize:11,color:TYPE_META[type]?.color||"#888",fontWeight:600,marginBottom:6,textTransform:"uppercase",letterSpacing:.5}}>{label}</div>
+                  <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                    {storesOfType.map(([id,s])=>{
+                      const on=preferredStores.includes(id);
+                      const tc=TYPE_META[s.type]?.color||"#888";
+                      return(
+                        <button key={id} onClick={()=>handleStores(preferredStores.includes(id)?preferredStores.filter(x=>x!==id):[...preferredStores,id])} style={{display:"flex",alignItems:"center",gap:4,fontSize:12,padding:"6px 11px",borderRadius:20,background:on?tc+"15":"#f5f5f3",border:on?`1.5px solid ${tc}`:"0.5px solid #eee",color:on?tc:"#666"}}>
+                          <span style={{fontSize:13}}>{s.flag}</span>{s.name}{on&&<span style={{fontSize:10,fontWeight:600}}>✓</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+
             {!addStorePanel?(
-              <button onClick={()=>setAddStorePanel(true)} style={{width:"100%",fontSize:12,padding:9,border:"1.5px dashed #ccc",borderRadius:10,background:"transparent",color:"#888",cursor:"pointer",marginBottom:16}}>+ Add a store not in the list</button>
+              <button onClick={()=>setAddStorePanel(true)} style={{width:"100%",fontSize:12,padding:10,border:"1.5px dashed #ddd",borderRadius:11,background:"transparent",color:"#aaa",marginBottom:16}}>+ Add a store not in the list</button>
             ):(
-              <div style={{padding:12,border:"0.5px solid #ddd",borderRadius:12,marginBottom:16,background:"#fafafa"}}>
-                <div style={{fontSize:12,fontWeight:600,marginBottom:8}}>Add custom store</div>
+              <div style={{padding:13,border:"0.5px solid #ddd",borderRadius:13,marginBottom:16,background:"#fafafa"}}>
+                <div style={{fontSize:12,fontWeight:600,marginBottom:9}}>Add custom store</div>
                 <input value={newStore.name} onChange={e=>setNewStore(s=>({...s,name:e.target.value}))} placeholder="Store name (e.g. Bharat Bazaar)" style={{marginBottom:7,fontSize:13}}/>
                 <input value={newStore.address} onChange={e=>setNewStore(s=>({...s,address:e.target.value}))} placeholder="Address (e.g. 123 Main St, Hanover MD)" style={{marginBottom:7,fontSize:13}}/>
                 <input value={newStore.specialty} onChange={e=>setNewStore(s=>({...s,specialty:e.target.value}))} placeholder="Best categories: spices, rice/grains, produce" style={{marginBottom:10,fontSize:13}}/>
                 <div style={{display:"flex",gap:7}}>
-                  <button onClick={addCustomStore} style={{flex:1,fontSize:13,padding:8,background:green,color:"#fff",border:"none",borderRadius:8,cursor:"pointer"}}>Add store</button>
-                  <button onClick={()=>setAddStorePanel(false)} style={{fontSize:13,padding:"8px 14px"}}>Cancel</button>
+                  <button onClick={addCustomStore} style={{flex:1,fontSize:13,padding:9,background:G,color:"#fff",border:"none",borderRadius:9,fontWeight:600}}>Add store</button>
+                  <button onClick={()=>setAddStorePanel(false)} style={{fontSize:13,padding:"9px 14px"}}>Cancel</button>
                 </div>
               </div>
             )}
+
+            <div style={{marginTop:8,padding:"12px 14px",background:"#fef2f2",borderRadius:11,border:"0.5px solid #fcc"}}>
+              <div style={{fontSize:12,fontWeight:600,color:"#e24b4a",marginBottom:8}}>Danger zone</div>
+              <button onClick={async()=>{if(confirm("Clear all data? This cannot be undone.")){await Promise.all(Object.values(STORE_NAMES).map(s=>dbClear(s)));setList([]);setHistory([]);setCustomStores([]);setPreferredStores(["aldi","walmart","foodlion","patelBros","lottePlaza","costco","samsclub"]);refreshStorage();}}} style={{width:"100%",fontSize:12,padding:9,borderRadius:9,background:"#fff",border:"0.5px solid #fcc",color:"#e24b4a"}}>Clear all app data</button>
+            </div>
           </div>
         )}
+
       </div>
     </div>
   );
